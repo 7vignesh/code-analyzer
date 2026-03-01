@@ -1,0 +1,28 @@
+{
+  "question": "authentication and login",
+  "root": "/home/user/my-typescript-project",
+  "limit": 3,
+  "files": [
+    {
+      "path": "src/auth/AuthService.ts",
+      "score": 0.92,
+      "skeleton": "/* Skeleton of AuthService.ts */\n\nimport { User } from '../models/User';\nimport { TokenService } from './TokenService';\nimport bcrypt from 'bcrypt';\n\n/**\n * Authentication service handling user login and session management\n */\nexport class AuthService {\n  private tokenService: TokenService;\n\n  constructor(tokenService: TokenService) {\n    /* trimmed */\n  }\n\n  /**\n   * Authenticate user with email and password\n   * @param email User email\n   * @param password User password\n   * @returns Authenticated user with token\n   */\n  async login(email: string, password: string): Promise<{ user: User; token: string }> {\n    /* trimmed */\n  }\n\n  /**\n   * Logout user and invalidate token\n   */\n  async logout(userId: string): Promise<void> {\n    /* trimmed */\n  }\n\n  /**\n   * Verify authentication token\n   */\n  async verifyToken(token: string): Promise<User | null> {\n    /* trimmed */\n  }\n\n}",
+      "originalTokenCount": 487,
+      "skeletonTokenCount": 156
+    },
+    {
+      "path": "src/middleware/AuthMiddleware.ts",
+      "score": 0.85,
+      "skeleton": "/* Skeleton of AuthMiddleware.ts */\n\nimport { Request, Response, NextFunction } from 'express';\nimport { AuthService } from '../auth/AuthService';\n\n/**\n * Middleware to check authentication\n */\nexport function requireAuth(authService: AuthService): (req: Request, res: Response, next: NextFunction) => Promise<void> {\n  /* trimmed */\n}\n\n/**\n * Middleware to check specific roles\n */\nexport function requireRole(...roles: string[]): (req: Request, res: Response, next: NextFunction) => Promise<void> {\n  /* trimmed */\n}",
+      "originalTokenCount": 312,
+      "skeletonTokenCount": 98
+    },
+    {
+      "path": "src/controllers/LoginController.ts",
+      "score": 0.78,
+      "skeleton": "/* Skeleton of LoginController.ts */\n\nimport { Request, Response } from 'express';\nimport { AuthService } from '../auth/AuthService';\n\nexport class LoginController {\n  private authService: AuthService;\n\n  constructor(authService: AuthService) {\n    /* trimmed */\n  }\n\n  /**\n   * Handle login request\n   */\n  async handleLogin(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {\n    /* trimmed */\n  }\n\n  /**\n   * Handle logout request\n   */\n  async handleLogout(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {\n    /* trimmed */\n  }\n\n}",
+      "originalTokenCount": 245,
+      "skeletonTokenCount": 89
+    }
+  ]
+}

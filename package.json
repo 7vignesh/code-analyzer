@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rc-skel": "dist/cli.js"
+    "rc-skel": "dist/cli.js",
+    "rc-agent": "dist/agent-cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -13,6 +14,7 @@
     "lint": "eslint src --ext .ts",
     "start": "npm run build && node dist/cli.js",
     "cli": "npm run build && node dist/cli.js",
+    "benchmark": "npm run build && node dist/benchmark.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -24,6 +26,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "ts-morph": "^21.0.1"
   },
   "devDependencies": {

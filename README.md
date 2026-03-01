@@ -1,14 +1,23 @@
 # rc-code-skeletonizer
 
-A TypeScript code analysis tool that ranks files by relevance to a natural language question and generates semantic skeletons (type signatures without implementations).
+**An AI-powered TypeScript code analysis tool** that ranks files by relevance and generates semantic skeletons with on-demand symbol retrieval for efficient LLM context usage.
+
+## 🌟 What's New (v0.2.0)
+
+- ✨ **Symbol Mapping System** - On-demand retrieval of function implementations
+- 🧠 **Enhanced Ranking** - Multi-factor scoring with dependency analysis  
+- 🤖 **Gemini AI Integration** - Agentic code analysis with 3 specialized tools
+- 📊 **Benchmark Suite** - Comprehensive testing showing **77.4% average token reduction**
 
 ## Features
 
-- 🔍 **Smart File Ranking**: Ranks TypeScript files based on relevance to your question
-- 📝 **Semantic Skeletons**: Extracts structure (classes, interfaces, function signatures) without implementation details
-- 🎯 **Token Counting**: Compares original vs skeleton token counts to show compression
-- 📦 **Library + CLI**: Use as a command-line tool or integrate into your own code
-- ⚡ **Fast & Simple**: Uses keyword-based ranking (no external API calls)
+- 🔍 **Smart File Ranking**: Advanced multi-factor relevance scoring
+- 📝 **Semantic Skeletons**: Extracts structure without implementation details
+- 🧩 **Symbol Mapping**: Enables lazy loading of specific code blocks
+- 🎯 **Token Reduction**: Average **77.4% reduction** in context size
+- 🤖 **AI Agent Mode**: Interactive code analysis with Gemini
+- 📦 **Library + CLI**: Use standalone or integrate into your workflow
+- ⚡ **Fast & Accurate**: AST-based analysis with ts-morph
 
 ## Installation
 
@@ -17,19 +26,58 @@ npm install
 npm run build
 ```
 
+## 📊 Benchmark Results
+
+Performance on code-analyzer project (self-analysis):
+
+| Metric | Result |
+|--------|--------|
+| **Average Token Reduction** | **77.4%** ⬇️ |
+| **Best Reduction** | **93.1%** (test files) |
+| **Enhanced Ranking** | ✓ Better relevance scores |
+| **Execution Time** | ~7s for 5 files |
+
+```bash
+npm run benchmark  # Run full benchmark suite
+```
+
+See [IMPLEMENTATION.md](IMPLEMENTATION.md) for detailed results and comparisons.
+
 ## Usage
 
 ### CLI
 
+**Basic Skeleton Generation:**
 ```bash
 # Basic usage
 rc-skel --question "authentication logic"
+
+# With enhanced ranking
+rc-skel --question "database models" --enhanced-ranking
+
+# With symbol mapping (on-demand retrieval)
+rc-skel --question "API endpoints" --with-mapping
 
 # Specify project root and limit
 rc-skel --root ./my-project --question "database models" --limit 5
 
 # Get help
 rc-skel --help
+```
+
+**AI Agent Mode:**
+```bash
+# Set API key
+export GEMINI_API_KEY="your-key-here"
+
+# Single question
+rc-agent --question "How does authentication work?"
+
+# Interactive chat mode
+rc-agent --interactive
+
+# Get help
+rc-agent --help
 ```
 
 ### Library

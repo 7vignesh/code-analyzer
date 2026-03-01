@@ -10,6 +10,8 @@ interface CliArgs {
   root: string;
   question: string;
   limit: number;
+  generateMapping: boolean;
+  mappingOutputPath?: string;
 }
 
 /**
@@ -21,6 +23,8 @@ function parseArgs(): CliArgs | null {
   let root = process.cwd();
   let question = '';
   let limit = 10;
+  let generateMapping = false;
+  let mappingOutputPath: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -38,6 +42,12 @@ function parseArgs(): CliArgs | null {
         return null;
       }
       i++;
+    } else if (arg === '--with-mapping') {
+      generateMapping = true;
+    } else if (arg === '--mapping-output' && i + 1 < args.length) {
+      mappingOutputPath = args[i + 1];
+      generateMapping = true; // Implies mapping generation
+      i++;
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       return null;
@@ -54,7 +64,7 @@ function parseArgs(): CliArgs | null {
     return null;
   }
 
-  return { root, question, limit };
+  return { root, question, limit, generateMapping, mappingOutputPath };
 }
 
 /**
@@ -68,14 +78,18 @@ Usage:
   rc-skel --question "<text>" [options]
 
 Options:
-  --root <path>       Project root directory (default: current directory)
-  --question "<text>" Natural language question about the codebase (required)
-  --limit <number>    Number of top files to analyze (default: 10)
-  --help, -h          Show this help message
+  --root <path>            Project root directory (default: current directory)
+  --question "<text>"      Natural language question about the codebase (required)
+  --limit <number>         Number of top files to analyze (default: 10)
+  --with-mapping           Generate symbol mapping for on-demand retrieval
+  --mapping-output <path>  Custom path for mapping file (implies --with-mapping)
+  --help, -h               Show this help message
 
 Example:
   rc-skel --question "authentication logic" --limit 5
   rc-skel --root ./my-project --question "database models"
+  rc-skel --question "API endpoints" --with-mapping
+  rc-skel --question "user management" --mapping-output ./mapping.json
 
 Output:
   JSON object with ranked files and their code skeletons

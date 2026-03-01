@@ -1,0 +1,357 @@
+{
+  "generatedAt": "2026-03-01T13:47:55.034Z",
+  "rootPath": "/home/manu/vignesh/code-analyzer",
+  "files": {
+    "src/agent.ts": {
+      "originalPath": "/home/manu/vignesh/code-analyzer/src/agent.ts",
+      "symbols": [
+        {
+          "symbolId": "CodeAnalysisAgent.loadMapping",
+          "symbolName": "loadMapping",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 101,
+          "endLine": 107,
+          "startPos": 3162,
+          "endPos": 3457,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "loadMapping(mappingPath: string): void"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.handleToolCall",
+          "symbolName": "handleToolCall",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 112,
+          "endLine": 128,
+          "startPos": 3511,
+          "endPos": 4030,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "private async handleToolCall(functionCall: any): Promise<any>"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.handleGetSymbolDetails",
+          "symbolName": "handleGetSymbolDetails",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 133,
+          "endLine": 153,
+          "startPos": 4070,
+          "endPos": 4685,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "private handleGetSymbolDetails(symbolId: string): any"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.handleSearchSymbols",
+          "symbolName": "handleSearchSymbols",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 158,
+          "endLine": 196,
+          "startPos": 4721,
+          "endPos": 5991,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "private handleSearchSymbols(query: string, symbolType?: string): any"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.handleAnalyzeFileDependencies",
+          "symbolName": "handleAnalyzeFileDependencies",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 201,
+          "endLine": 236,
+          "startPos": 6038,
+          "endPos": 7099,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "private handleAnalyzeFileDependencies(filePath: string): any"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.chat",
+          "symbolName": "chat",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 241,
+          "endLine": 278,
+          "startPos": 7156,
+          "endPos": 8345,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "async chat(userMessage: string, skeletonContext?: string): Promise<string>"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.getStats",
+          "symbolName": "getStats",
+          "symbolType": "method",
+          "filePath": "src/agent.ts",
+          "startLine": 283,
+          "endLine": 305,
+          "startPos": 8406,
+          "endPos": 9059,
+          "parentClass": "CodeAnalysisAgent",
+          "signature": "getStats(): any"
+        },
+        {
+          "symbolId": "CodeAnalysisAgent.constructor",
+          "symbolName": "constructor",
+          "symbolType": "constructor",
+          "filePath": "src/agent.ts",
+          "startLine": 82,
+          "endLine": 96,
+          "startPos": 2716,
+          "endPos": 3121,
+          "parentClass": "CodeAnalysisAgent"
+        },
+        {
+          "symbolId": "createCodeAnalysisAgent",
+          "symbolName": "createCodeAnalysisAgent",
+          "symbolType": "function",
+          "filePath": "src/agent.ts",
+          "startLine": 311,
+          "endLine": 313,
+          "startPos": 9118,
+          "endPos": 9267,
+          "signature": "export function createCodeAnalysisAgent(apiKey: string, modelName?: string): CodeAnalysisAgent"
+        }
+      ]
+    },
+    "src/mapper.ts": {
+      "originalPath": "/home/manu/vignesh/code-analyzer/src/mapper.ts",
+      "symbols": [
+        {
+          "symbolId": "buildSkeletonWithMapping",
+          "symbolName": "buildSkeletonWithMapping",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 37,
+          "endLine": 62,
+          "startPos": 817,
+          "endPos": 1530,
+          "signature": "export function buildSkeletonWithMapping(\n  filePath: string,\n  rootPath: string\n):"
+        },
+        {
+          "symbolId": "generateSkeletonWithMapping",
+          "symbolName": "generateSkeletonWithMapping",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 67,
+          "endLine": 139,
+          "startPos": 1589,
+          "endPos": 3616,
+          "signature": "function generateSkeletonWithMapping(\n  sourceFile: SourceFile,\n  filePath: string,\n  symbols: SymbolLocation[],\n  rootPath: string\n): string"
+        },
+        {
+          "symbolId": "processClassWithMapping",
+          "symbolName": "processClassWithMapping",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 144,
+          "endLine": 241,
+          "startPos": 3659,
+          "endPos": 6493,
+          "signature": "function processClassWithMapping(\n  cls: any,\n  filePath: string,\n  symbols: SymbolLocation[],\n  rootPath: string\n): string"
+        },
+        {
+          "symbolId": "processMethodSignature",
+          "symbolName": "processMethodSignature",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 246,
+          "endLine": 269,
+          "startPos": 6555,
+          "endPos": 7399,
+          "signature": "function processMethodSignature(method: any, symbolId: string): string"
+        },
+        {
+          "symbolId": "processConstructorSignature",
+          "symbolName": "processConstructorSignature",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 274,
+          "endLine": 294,
+          "startPos": 7442,
+          "endPos": 8174,
+          "signature": "function processConstructorSignature(ctor: any, symbolId: string): string"
+        },
+        {
+          "symbolId": "processFunctionWithMapping",
+          "symbolName": "processFunctionWithMapping",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 299,
+          "endLine": 340,
+          "startPos": 8217,
+          "endPos": 9494,
+          "signature": "function processFunctionWithMapping(\n  func: any,\n  filePath: string,\n  symbols: SymbolLocation[],\n  rootPath: string\n): string"
+        },
+        {
+          "symbolId": "processVariableStatementWithMapping",
+          "symbolName": "processVariableStatementWithMapping",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 345,
+          "endLine": 407,
+          "startPos": 9561,
+          "endPos": 11770,
+          "signature": "function processVariableStatementWithMapping(\n  varStatement: any,\n  filePath: string,\n  symbols: SymbolLocation[],\n  rootPath: string\n): string"
+        },
+        {
+          "symbolId": "getSymbolDetails",
+          "symbolName": "getSymbolDetails",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 412,
+          "endLine": 433,
+          "startPos": 11821,
+          "endPos": 12498,
+          "signature": "export function getSymbolDetails(\n  symbolId: string,\n  mapping: SymbolMapping\n):"
+        },
+        {
+          "symbolId": "saveMappingToFile",
+          "symbolName": "saveMappingToFile",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 438,
+          "endLine": 440,
+          "startPos": 12537,
+          "endPos": 12699,
+          "signature": "export function saveMappingToFile(mapping: SymbolMapping, outputPath: string): void"
+        },
+        {
+          "symbolId": "loadMappingFromFile",
+          "symbolName": "loadMappingFromFile",
+          "symbolType": "function",
+          "filePath": "src/mapper.ts",
+          "startLine": 445,
+          "endLine": 448,
+          "startPos": 12740,
+          "endPos": 12902,
+          "signature": "export function loadMappingFromFile(mappingPath: string): SymbolMapping"
+        }
+      ]
+    },
+    "src/index.ts": {
+      "originalPath": "/home/manu/vignesh/code-analyzer/src/index.ts",
+      "symbols": [
+        {
+          "symbolId": "analyzeProject",
+          "symbolName": "analyzeProject",
+          "symbolType": "function",
+          "filePath": "src/index.ts",
+          "startLine": 25,
+          "endLine": 111,
+          "startPos": 606,
+          "endPos": 2921,
+          "signature": "export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisResult>"
+        }
+      ]
+    },
+    "src/agent-cli.ts": {
+      "originalPath": "/home/manu/vignesh/code-analyzer/src/agent-cli.ts",
+      "symbols": [
+        {
+          "symbolId": "parseArgs",
+          "symbolName": "parseArgs",
+          "symbolType": "function",
+          "filePath": "src/agent-cli.ts",
+          "startLine": 25,
+          "endLine": 81,
+          "startPos": 487,
+          "endPos": 2093,
+          "signature": "function parseArgs(): AgentCliArgs | null"
+        },
+        {
+          "symbolId": "printHelp",
+          "symbolName": "printHelp",
+          "symbolType": "function",
+          "filePath": "src/agent-cli.ts",
+          "startLine": 86,
+          "endLine": 111,
+          "startPos": 2125,
+          "endPos": 3027,
+          "signature": "function printHelp(): void"
+        },
+        {
+          "symbolId": "runSingleQuestion",
+          "symbolName": "runSingleQuestion",
+          "symbolType": "function",
+          "filePath": "src/agent-cli.ts",
+          "startLine": 116,
+          "endLine": 154,
+          "startPos": 3065,
+          "endPos": 4290,
+          "signature": "async function runSingleQuestion(args: AgentCliArgs): Promise<void>"
+        },
+        {
+          "symbolId": "runInteractive",
+          "symbolName": "runInteractive",
+          "symbolType": "function",
+          "filePath": "src/agent-cli.ts",
+          "startLine": 159,
+          "endLine": 236,
+          "startPos": 4324,
+          "endPos": 6478,
+          "signature": "async function runInteractive(args: AgentCliArgs): Promise<void>"
+        },
+        {
+          "symbolId": "main",
+          "symbolName": "main",
+          "symbolType": "function",
+          "filePath": "src/agent-cli.ts",
+          "startLine": 241,
+          "endLine": 258,
+          "startPos": 6509,
+          "endPos": 6867,
+          "signature": "async function main(): Promise<void>"
+        }
+      ]
+    },
+    "src/benchmark.ts": {
+      "originalPath": "/home/manu/vignesh/code-analyzer/src/benchmark.ts",
+      "symbols": [
+        {
+          "symbolId": "benchmarkProject",
+          "symbolName": "benchmarkProject",
+          "symbolType": "function",
+          "filePath": "src/benchmark.ts",
+          "startLine": 36,
+          "endLine": 93,
+          "startPos": 791,
+          "endPos": 2247,
+          "signature": "async function benchmarkProject(\n  projectPath: string,\n  projectName: string,\n  query: string,\n  options:"
+        },
+        {
+          "symbolId": "formatResults",
+          "symbolName": "formatResults",
+          "symbolType": "function",
+          "filePath": "src/benchmark.ts",
+          "startLine": 98,
+          "endLine": 150,
+          "startPos": 2297,
+          "endPos": 4983,
+          "signature": "function formatResults(results: BenchmarkResult[]): string"
+        },
+        {
+          "symbolId": "saveBenchmarkResults",
+          "symbolName": "saveBenchmarkResults",
+          "symbolType": "function",
+          "filePath": "src/benchmark.ts",
+          "startLine": 155,
+          "endLine": 170,
+          "startPos": 5027,
+          "endPos": 5771,
+          "signature": "function saveBenchmarkResults(results: BenchmarkResult[], outputPath: string): void"
+        },
+        {
+          "symbolId": "runBenchmarks",
+          "symbolName": "runBenchmarks",
+          "symbolType": "function",
+          "filePath": "src/benchmark.ts",
+          "startLine": 175,
+          "endLine": 231,
+          "startPos": 5808,
+          "endPos": 7798,
+          "signature": "async function runBenchmarks(): Promise<void>"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "generatedAt": "2026-03-01T13:48:08.264Z",
+  "benchmarks": [
+    {
+      "projectName": "code-analyzer (self)",
+      "projectPath": "/home/manu/vignesh/code-analyzer",
+      "query": "file ranking and skeleton generation",
+      "totalFiles": 5,
+      "analyzedFiles": 5,
+      "totalTokens": 3372,
+      "skeletonTokens": 736,
+      "reductionPercent": 78.1731909845789,
+      "mappingGenerated": false,
+      "enhancedRanking": false,
+      "executionTimeMs": 3589,
+      "topFiles": [
+        {
+          "path": "tests/skeletonizer.test.ts",
+          "score": 0.25,
+          "originalTokens": 435,
+          "skeletonTokens": 30,
+          "reduction": 93.10344827586206
+        },
+        {
+          "path": "src/skeletonizer.ts",
+          "score": 0.21599999999999997,
+          "originalTokens": 902,
+          "skeletonTokens": 123,
+          "reduction": 86.36363636363636
+        },
+        {
+          "path": "src/benchmark.ts",
+          "score": 0.13,
+          "originalTokens": 808,
+          "skeletonTokens": 123,
+          "reduction": 84.77722772277228
+        },
+        {
+          "path": "src/index.ts",
+          "score": 0.09200000000000001,
+          "originalTokens": 308,
+          "skeletonTokens": 119,
+          "reduction": 61.36363636363637
+        },
+        {
+          "path": "src/agent.ts",
+          "score": 0.08200000000000002,
+          "originalTokens": 919,
+          "skeletonTokens": 341,
+          "reduction": 62.89445048966268
+        }
+      ]
+    },
+    {
+      "projectName": "code-analyzer (self)",
+      "projectPath": "/home/manu/vignesh/code-analyzer",
+      "query": "file ranking and skeleton generation",
+      "totalFiles": 5,
+      "analyzedFiles": 5,
+      "totalTokens": 3459,
+      "skeletonTokens": 731,
+      "reductionPercent": 78.86672448684591,
+      "mappingGenerated": false,
+      "enhancedRanking": true,
+      "executionTimeMs": 7146,
+      "topFiles": [
+        {
+          "path": "src/index.ts",
+          "score": 0.5234313508680192,
+          "originalTokens": 308,
+          "skeletonTokens": 119,
+          "reduction": 61.36363636363637
+        },
+        {
+          "path": "src/skeletonizer.ts",
+          "score": 0.3476273434137517,
+          "originalTokens": 902,
+          "skeletonTokens": 123,
+          "reduction": 86.36363636363636
+        },
+        {
+          "path": "src/mapper.ts",
+          "score": 0.3419954585778795,
+          "originalTokens": 1205,
+          "skeletonTokens": 307,
+          "reduction": 74.52282157676349
+        },
+        {
+          "path": "src/scanner.ts",
+          "score": 0.2931007798254061,
+          "originalTokens": 146,
+          "skeletonTokens": 48,
+          "reduction": 67.12328767123287
+        },
+        {
+          "path": "src/ranker-enhanced.ts",
+          "score": 0.27222117609864777,
+          "originalTokens": 898,
+          "skeletonTokens": 134,
+          "reduction": 85.07795100222717
+        }
+      ]
+    },
+    {
+      "projectName": "code-analyzer (self)",
+      "projectPath": "/home/manu/vignesh/code-analyzer",
+      "query": "agent integration and symbol mapping",
+      "totalFiles": 5,
+      "analyzedFiles": 5,
+      "totalTokens": 4057,
+      "skeletonTokens": 989,
+      "reductionPercent": 75.62238106975597,
+      "mappingGenerated": true,
+      "enhancedRanking": true,
+      "executionTimeMs": 7480,
+      "topFiles": [
+        {
+          "path": "src/agent.ts",
+          "score": 0.5362978904800242,
+          "originalTokens": 919,
+          "skeletonTokens": 341,
+          "reduction": 62.89445048966268
+        },
+        {
+          "path": "src/mapper.ts",
+          "score": 0.45454249519197854,
+          "originalTokens": 1205,
+          "skeletonTokens": 305,
+          "reduction": 74.68879668049793
+        },
+        {
+          "path": "src/index.ts",
+          "score": 0.3893390281846237,
+          "originalTokens": 308,
+          "skeletonTokens": 118,
+          "reduction": 61.68831168831169
+        },
+        {
+          "path": "src/agent-cli.ts",
+          "score": 0.2892959245735588,
+          "originalTokens": 817,
+          "skeletonTokens": 96,
+          "reduction": 88.24969400244798
+        },
+        {
+          "path": "src/benchmark.ts",
+          "score": 0.18141186249711697,
+          "originalTokens": 808,
+          "skeletonTokens": 129,
+          "reduction": 84.03465346534654
+        }
+      ]
+    },
+    {
+      "projectName": "code-analyzer (self)",
+      "projectPath": "/home/manu/vignesh/code-analyzer",
+      "query": "AST parsing and TypeScript analysis",
+      "totalFiles": 10,
+      "analyzedFiles": 10,
+      "totalTokens": 6231,
+      "skeletonTokens": 1437,
+      "reductionPercent": 76.93789118921521,
+      "mappingGenerated": false,
+      "enhancedRanking": true,
+      "executionTimeMs": 9574,
+      "topFiles": [
+        {
+          "path": "src/index.ts",
+          "score": 0.20109551399115333,
+          "originalTokens": 308,
+          "skeletonTokens": 119,
+          "reduction": 61.36363636363637
+        },
+        {
+          "path": "src/scanner.ts",
+          "score": 0.19443388320110264,
+          "originalTokens": 146,
+          "skeletonTokens": 48,
+          "reduction": 67.12328767123287
+        },
+        {
+          "path": "src/benchmark.ts",
+          "score": 0.19320441736864113,
+          "originalTokens": 808,
+          "skeletonTokens": 123,
+          "reduction": 84.77722772277228
+        },
+        {
+          "path": "src/agent-cli.ts",
+          "score": 0.1508007224174738,
+          "originalTokens": 817,
+          "skeletonTokens": 84,
+          "reduction": 89.71848225214198
+        },
+        {
+          "path": "src/agent.ts",
+          "score": 0.14551485485044302,
+          "originalTokens": 919,
+          "skeletonTokens": 341,
+          "reduction": 62.89445048966268
+        },
+        {
+          "path": "src/ranker-enhanced.ts",
+          "score": 0.13627499895052833,
+          "originalTokens": 898,
+          "skeletonTokens": 134,
+          "reduction": 85.07795100222717
+        },
+        {
+          "path": "src/types.ts",
+          "score": 0.13015757188647928,
+          "originalTokens": 161,
+          "skeletonTokens": 139,
+          "reduction": 13.664596273291925
+        },
+        {
+          "path": "src/mapper.ts",
+          "score": 0.11439951515757105,
+          "originalTokens": 1205,
+          "skeletonTokens": 307,
+          "reduction": 74.52282157676349
+        },
+        {
+          "path": "src/tokenizer.ts",
+          "score": 0.11047281923547782,
+          "originalTokens": 67,
+          "skeletonTokens": 19,
+          "reduction": 71.64179104477611
+        },
+        {
+          "path": "src/skeletonizer.ts",
+          "score": 0.10291814710126425,
+          "originalTokens": 902,
+          "skeletonTokens": 123,
+          "reduction": 86.36363636363636
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalBenchmarks": 4,
+    "averageTokenReduction": 77.400046932599,
+    "totalOriginalTokens": 17119,
+    "totalSkeletonTokens": 3893,
+    "averageExecutionTime": 6947.25
+  }
+}

@@ -5,8 +5,14 @@
 import * as path from 'path';
 import { scanTypeScriptFiles, readFileContent } from './scanner';
 import { rankFiles } from './ranker';
+import { rankFilesEnhanced } from './ranker-enhanced';
 import { buildSkeletonForFile } from './skeletonizer';
 import { countTokens } from './tokenizer';
+import {
+  buildSkeletonWithMapping,
+  saveMappingToFile,
+  type SymbolMapping,
+} from './mapper';
 import {
   AnalyzeOptions,
   AnalysisResult,
@@ -21,6 +27,9 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
     root,
     question,
     limit = 10,
+    generateMapping = false,
+    mappingOutputPath,
+    enhancedRanking = false,
   } = options;
 
   // Resolve absolute path
@@ -39,10 +48,17 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
   }
 
   // Step 2: Rank files by relevance
-  const rankedFiles = rankFiles(allFiles, question, limit);
+  const rankedFiles = enhancedRanking
+    ? rankFilesEnhanced(allFiles, question, limit, absoluteRoot)
+    : rankFiles(allFiles, question, limit);
 
   // Step 3: Generate skeletons for top files
   const fileAnalyses: FileAnalysis[] = [];
+  const symbolMapping: SymbolMapping = {
+    generatedAt: new Date().toISOString(),
+    rootPath: absoluteRoot,
+    files: {},
+  };
 
   for (const rankedFile of rankedFiles) {
     const originalContent = readFileContent(rankedFile.path);
@@ -50,8 +66,25 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
       continue;
     }
 
-    const skeleton = buildSkeletonForFile(rankedFile.path);
     const relativePath = path.relative(absoluteRoot, rankedFile.path);
+
+    let skeleton: string;
+    
+    if (generateMapping) {
+      // Use mapping-aware skeleton generation
+      const result = buildSkeletonWithMapping(rankedFile.path, absoluteRoot);
+      skeleton = result.skeleton;
+      
+      if (result.symbols.length > 0) {
+        symbolMapping.files[relativePath] = {
+          originalPath: rankedFile.path,
+          symbols: result.symbols,
+        };
+      }
+    } else {
+      // Use standard skeleton generation
+      skeleton = buildSkeletonForFile(rankedFile.path);
+    }
 
     fileAnalyses.push({
       path: relativePath,
@@ -60,6 +93,13 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
       originalTokenCount: countTokens(originalContent),
       skeletonTokenCount: countTokens(skeleton),
     });
+  }
+
+  // Save mapping file if requested
+  if (generateMapping && Object.keys(symbolMapping.files).length > 0) {
+    const mappingPath = mappingOutputPath || path.join(absoluteRoot, 'code-analyzer.mapping.json');
+    saveMappingToFile(symbolMapping, mappingPath);
+    console.log(`Symbol mapping saved to: ${mappingPath}`);
   }
 
   return {
@@ -72,9 +112,18 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
 
 // Re-export individual functions for advanced usage
 export { rankFiles } from './ranker';
+export { rankFilesEnhanced } from './ranker-enhanced';
 export { buildSkeletonForFile } from './skeletonizer';
 export { scanTypeScriptFiles } from './scanner';
 export { countTokens } from './tokenizer';
+export {
+  buildSkeletonWithMapping,
+  getSymbolDetails,
+  saveMappingToFile,
+  loadMappingFromFile,
+  type SymbolMapping,
+  type SymbolLocation,
+} from './mapper';
 
 // Re-export types
 export type {

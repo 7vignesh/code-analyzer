@@ -12,6 +12,12 @@ export interface AnalyzeOptions {
   question: string;
   /** Number of top files to return */
   limit?: number;
+  /** Generate symbol mapping for on-demand retrieval */
+  generateMapping?: boolean;
+  /** Output path for mapping file (default: <root>/code-analyzer.mapping.json) */
+  mappingOutputPath?: string;
+  /** Use enhanced ranking algorithm with dependency analysis */
+  enhancedRanking?: boolean;
 }
 
 /**

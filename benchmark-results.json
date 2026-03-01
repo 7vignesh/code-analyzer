@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-01T13:48:08.264Z",
+  "generatedAt": "2026-03-01T14:38:04.173Z",
   "benchmarks": [
     {
       "projectName": "code-analyzer (self)",
@@ -12,7 +12,7 @@
       "reductionPercent": 78.1731909845789,
       "mappingGenerated": false,
       "enhancedRanking": false,
-      "executionTimeMs": 3589,
+      "executionTimeMs": 3331,
       "topFiles": [
         {
           "path": "tests/skeletonizer.test.ts",
@@ -62,7 +62,7 @@
       "reductionPercent": 78.86672448684591,
       "mappingGenerated": false,
       "enhancedRanking": true,
-      "executionTimeMs": 7146,
+      "executionTimeMs": 6599,
       "topFiles": [
         {
           "path": "src/index.ts",
@@ -112,7 +112,7 @@
       "reductionPercent": 75.62238106975597,
       "mappingGenerated": true,
       "enhancedRanking": true,
-      "executionTimeMs": 7480,
+      "executionTimeMs": 6510,
       "topFiles": [
         {
           "path": "src/agent.ts",
@@ -162,7 +162,7 @@
       "reductionPercent": 76.93789118921521,
       "mappingGenerated": false,
       "enhancedRanking": true,
-      "executionTimeMs": 9574,
+      "executionTimeMs": 9326,
       "topFiles": [
         {
           "path": "src/index.ts",
@@ -242,6 +242,6 @@
     "averageTokenReduction": 77.400046932599,
     "totalOriginalTokens": 17119,
     "totalSkeletonTokens": 3893,
-    "averageExecutionTime": 6947.25
+    "averageExecutionTime": 6441.5
   }
 }

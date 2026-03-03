@@ -7,14 +7,14 @@
 - ✨ **Symbol Mapping System** - On-demand retrieval of function implementations
 - 🧠 **Enhanced Ranking** - Multi-factor scoring with dependency analysis  
 - 🤖 **Gemini AI Integration** - Agentic code analysis with 3 specialized tools
-- 📊 **Benchmark Suite** - Comprehensive testing showing **77.4% average token reduction**
+- 📊 **Benchmark Suite** - Tested on Rocket.Chat monorepo: **avg 81.5% token reduction**, **~99.5% vs full-scan**
 
 ## Features
 
 - 🔍 **Smart File Ranking**: Advanced multi-factor relevance scoring
 - 📝 **Semantic Skeletons**: Extracts structure without implementation details
 - 🧩 **Symbol Mapping**: Enables lazy loading of specific code blocks
-- 🎯 **Token Reduction**: Average **77.4% reduction** in context size
+- 🎯 **Token Reduction**: **81.5% avg** (vs module scan) / **99.5%** vs naive full-scan on Rocket.Chat
 - 🤖 **AI Agent Mode**: Interactive code analysis with Gemini
 - 📦 **Library + CLI**: Use standalone or integrate into your workflow
 - ⚡ **Fast & Accurate**: AST-based analysis with ts-morph
@@ -26,22 +26,27 @@ npm install
 npm run build
 ```
 
-## 📊 Benchmark Results
+## 📊 Benchmark Results (Rocket.Chat Monorepo)
 
-Performance on code-analyzer project (self-analysis):
+Run directly on the **Rocket.Chat `apps/meteor`** codebase — same repo as other GSoC contributors:
 
-| Metric | Result |
-|--------|--------|
-| **Average Token Reduction** | **77.4%** ⬇️ |
-| **Best Reduction** | **93.1%** (test files) |
-| **Enhanced Ranking** | ✓ Better relevance scores |
-| **Execution Time** | ~7s for 5 files |
+| Query | Module | Files scanned | Full-scan tokens | Skeleton tokens | Reduction |
+|-------|--------|:---:|---:|---:|:---:|
+| send message to room | lib/server/functions | 63 | 15,861 | **1,599** | **89.9% ⬇️** |
+| user permissions & access | authorization | 22 | 4,886 | **719** | **85.3% ⬇️** |
+| E2E encryption keys | e2e | 21 | 8,795 | **2,116** | **75.9% ⬇️** |
+| file upload & media | file-upload | 21 | 7,276 | **1,832** | **74.8% ⬇️** |
+
+**Key facts:**
+- `sendMessage.ts` ranked **#1 (score 0.828)** for the send-message query
+- Full `app/` naive baseline: **1,105 files → ~298,770 tokens** (matches Echo's 299,820)
+- Our tool per-query: **~1,567 skeleton tokens = ~99.5% reduction vs full scan**
 
 ```bash
-npm run benchmark  # Run full benchmark suite
+npm run benchmark   # reproduce these numbers
 ```
 
-See [IMPLEMENTATION.md](IMPLEMENTATION.md) for detailed results and comparisons.
+See [IMPLEMENTATION.md](IMPLEMENTATION.md) for methodology and full data.
 
 ## Usage
 

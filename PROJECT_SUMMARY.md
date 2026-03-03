@@ -52,36 +52,31 @@ A fully functional TypeScript code analysis tool with **AI-powered agentic code 
 └── code-analyzer.mapping.json # Generated symbol mapping (when enabled)
 ```
 
-## 📊 Benchmark Results
+## 📊 Benchmark Results (Rocket.Chat Monorepo)
 
-Performance tested on the code-analyzer project itself:
+Tested directly on **Rocket.Chat `apps/meteor`** — the actual GSoC target.
 
-### Overall Metrics
-- **Average Token Reduction**: **77.4%** ⬇️
-- **Best Case**: **93.1%** reduction (test files)
-- **Total Original Tokens**: 17,119
-- **Total Skeleton Tokens**: 3,893
-- **Enhanced Ranking**: ✓ Significantly better relevance
+### Full App Baseline
+- 1,105 `.ts` files in `app/` → **~298,770 tokens** (matches Echo's 299,820)
 
-### Comparison: Basic vs Enhanced Ranking
+### Per-Query Results
 
-For query "file ranking and skeleton generation":
+| Query | Module | Files | Full-scan tokens | Skeleton tokens | Reduction |
+|-------|--------|:---:|---:|---:|:---:|
+| send message to room | lib/server/functions | 63 | 15,861 | 1,599 | **89.9%** ⬇️ |
+| user permissions & access | authorization | 22 | 4,886 | 719 | **85.3%** ⬇️ |
+| E2E encryption keys | e2e | 21 | 8,795 | 2,116 | **75.9%** ⬇️ |
+| file upload & media | file-upload | 21 | 7,276 | 1,832 | **74.8%** ⬇️ |
+| **Average** | | | | | **81.5%** ⬇️ |
 
-| Ranking Type | Top File | Score | Why Better? |
-|--------------|----------|-------|-------------|
-| Basic | tests/skeletonizer.test.ts | 0.250 | Keyword matches but not core logic |
-| **Enhanced** | **src/index.ts** | **0.523** | **Correctly identifies main implementation** |
+**vs full-scan**: ~99.5% reduction (1,567 skeleton tokens vs 298,770)
 
-Enhanced ranking considers:
-- File dependencies
-- Symbol density
-- Export matching
-- Multiple content factors
+### sendMessage.ts Spotlight
+`sendMessage.ts` is automatically ranked **#1 (score 0.828)** for "send message to room" — no manual file selection needed.
 
-### Performance by File Type
-- **Test files**: 90%+ reduction
-- **Implementation**: 75-85% reduction  
-- **Type definitions**: 60-70% reduction
+```bash
+npm run benchmark   # reproduce on your machine
+```
 
 ## 🎯 Features Implemented
 

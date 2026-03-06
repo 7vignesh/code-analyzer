@@ -3,7 +3,8 @@
  */
 
 import * as path from 'path';
-import { scanTypeScriptFiles, readFileContent } from './scanner';
+import { scanTypeScriptFiles, scanRocketChatFiles, readFileContent } from './scanner';
+import { resolveMeteorAppRoot, isRocketChatMeteorRoot } from './rocket-chat-scope';
 import { rankFiles } from './ranker';
 import { rankFilesEnhanced } from './ranker-enhanced';
 import { buildSkeletonForFile } from './skeletonizer';
@@ -30,13 +31,27 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
     generateMapping = false,
     mappingOutputPath,
     enhancedRanking = false,
+    moduleKeys,
+    strictRocketChatScope = true,
   } = options;
 
   // Resolve absolute path
   const absoluteRoot = path.resolve(root);
 
   // Step 1: Scan for TypeScript files
-  const allFiles = scanTypeScriptFiles(absoluteRoot);
+  let allFiles: string[] = [];
+
+  if (strictRocketChatScope) {
+    const analysisRoot = resolveMeteorAppRoot(absoluteRoot);
+    if (!isRocketChatMeteorRoot(analysisRoot) && !process.env.SKIP_RC_CHECK) {
+      console.warn(`Warning: ${analysisRoot} does not appear to be a Rocket.Chat Meteor app root.`);
+    }
+    // Use scoped scanner
+    allFiles = scanRocketChatFiles(absoluteRoot, moduleKeys);
+  } else {
+    // Use generic scanner
+    allFiles = scanTypeScriptFiles(absoluteRoot);
+  }
 
   if (allFiles.length === 0) {
     return {
@@ -114,7 +129,7 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
 export { rankFiles } from './ranker';
 export { rankFilesEnhanced } from './ranker-enhanced';
 export { buildSkeletonForFile } from './skeletonizer';
-export { scanTypeScriptFiles } from './scanner';
+export { scanTypeScriptFiles, scanRocketChatFiles } from './scanner';
 export { countTokens } from './tokenizer';
 export {
   buildSkeletonWithMapping,

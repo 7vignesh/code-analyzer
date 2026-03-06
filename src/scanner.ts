@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { getAllowedModulePaths } from './rocket-chat-scope';
 
 /**
  * Directories to ignore during scanning
@@ -55,6 +56,21 @@ export function scanTypeScriptFiles(rootDir: string): string[] {
   }
 
   scan(rootDir);
+  return results;
+}
+
+/**
+ * Scan only allowed Rocket.Chat modules
+ */
+export function scanRocketChatFiles(rootDir: string, moduleKeys?: string[]): string[] {
+  const allowedPaths = getAllowedModulePaths(rootDir, moduleKeys);
+  const results: string[] = [];
+
+  for (const modulePath of allowedPaths) {
+    if (fs.existsSync(modulePath)) {
+      results.push(...scanTypeScriptFiles(modulePath));
+    }
+  }
   return results;
 }
 

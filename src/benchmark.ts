@@ -6,9 +6,16 @@
 
 import { analyzeProject } from './index';
 import { scanTypeScriptFiles } from './scanner';
+import { ROCKET_CHAT_SCOPE_CONFIG, resolveMeteorAppRoot } from './rocket-chat-scope';
 import { countTokens } from './tokenizer';
 import * as path from 'path';
 import * as fs from 'fs';
+
+interface BenchmarkScenario {
+  moduleKey: string;
+  query: string;
+  limit: number;
+}
 
 interface BenchmarkResult {
   projectName: string;
@@ -33,6 +40,13 @@ interface BenchmarkResult {
     reductionPct: number;
   }[];
 }
+
+export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
+  { moduleKey: 'lib-server-functions', query: 'send message to room', limit: 10 },
+  { moduleKey: 'authorization', query: 'user permissions and access control', limit: 10 },
+  { moduleKey: 'e2e', query: 'end-to-end encryption key management', limit: 10 },
+  { moduleKey: 'file-upload', query: 'file upload and media handling', limit: 10 },
+];
 
 /**
  * Quickly sum tokens across all .ts/.tsx files in a directory.
@@ -67,22 +81,29 @@ function sampleDirectoryTokens(
  * Run a single benchmark scenario
  */
 async function benchmarkProject(
-  projectRoot: string,
+  appRoot: string,
+  moduleKey: string,
   projectName: string,
   query: string,
   options: { limit?: number; enhancedRanking?: boolean } = {}
 ): Promise<BenchmarkResult> {
   const limit = options.limit ?? 10;
+  const moduleConfig = ROCKET_CHAT_SCOPE_CONFIG.modules.find(m => m.key === moduleKey);
+  if (!moduleConfig) throw new Error(`Unknown module: ${moduleKey}`);
+  
+  const moduleFullPath = path.join(resolveMeteorAppRoot(appRoot), moduleConfig.relativePath);
 
-  // Baseline: estimate full-repo token cost
-  const baseline = sampleDirectoryTokens(projectRoot, 200);
+  // Baseline: estimate full-module token cost (what we are comparing against)
+  const baseline = sampleDirectoryTokens(moduleFullPath, 200);
 
   const start = Date.now();
   const result = await analyzeProject({
-    root: projectRoot,
+    root: appRoot,
     question: query,
     limit,
     enhancedRanking: options.enhancedRanking ?? true,
+    moduleKeys: [moduleKey],
+    strictRocketChatScope: true,
     generateMapping: false,
   });
   const executionTimeMs = Date.now() - start;
@@ -117,7 +138,7 @@ async function benchmarkProject(
 
   return {
     projectName,
-    projectRoot,
+    projectRoot: moduleFullPath,
     query,
     allFilesCount: baseline.fileCount,
     allFilesTotalTokens: baseline.totalTokens,
@@ -235,45 +256,19 @@ async function runBenchmarks(): Promise<void> {
 
   const results: BenchmarkResult[] = [];
 
-  // ── 1. lib/server/functions — "send message" (same scope as Echo's benchmark) ─
-  console.log('▶  [1/4] send message to room  (app/lib/server/functions — 63 files)');
-  results.push(await benchmarkProject(
-    `${RC_METEOR}/app/lib/server/functions`,
-    'Rocket.Chat › lib/server/functions',
-    'send message to room',
-    { limit: 10, enhancedRanking: true }
-  ));
-  console.log(`   ✓ ${results.at(-1)!.executionTimeMs}ms\n`);
-
-  // ── 2. authorization — "user permissions" ────────────────────────────────────
-  console.log('▶  [2/4] user permissions and access control  (app/authorization — 22 files)');
-  results.push(await benchmarkProject(
-    `${RC_METEOR}/app/authorization`,
-    'Rocket.Chat › authorization',
-    'user permissions and access control',
-    { limit: 10, enhancedRanking: true }
-  ));
-  console.log(`   ✓ ${results.at(-1)!.executionTimeMs}ms\n`);
-
-  // ── 3. e2e — "end-to-end encryption" ─────────────────────────────────────────
-  console.log('▶  [3/4] end-to-end encryption  (app/e2e — 21 files)');
-  results.push(await benchmarkProject(
-    `${RC_METEOR}/app/e2e`,
-    'Rocket.Chat › e2e',
-    'end-to-end encryption key management',
-    { limit: 10, enhancedRanking: true }
-  ));
-  console.log(`   ✓ ${results.at(-1)!.executionTimeMs}ms\n`);
-
-  // ── 4. file-upload — "file upload handling" ───────────────────────────────────
-  console.log('▶  [4/4] file upload and media handling  (app/file-upload — 21 files)');
-  results.push(await benchmarkProject(
-    `${RC_METEOR}/app/file-upload`,
-    'Rocket.Chat › file-upload',
-    'file upload and media handling',
-    { limit: 10, enhancedRanking: true }
-  ));
-  console.log(`   ✓ ${results.at(-1)!.executionTimeMs}ms\n`);
+  let i = 1;
+  for (const scenario of BENCHMARK_SCENARIOS) {
+    console.log(`▶  [${i}/${BENCHMARK_SCENARIOS.length}] ${scenario.query} (${scenario.moduleKey})`);
+    results.push(await benchmarkProject(
+      RC_METEOR,
+      scenario.moduleKey,
+      `Rocket.Chat › ${scenario.moduleKey}`,
+      scenario.query,
+      { limit: scenario.limit, enhancedRanking: true }
+    ));
+    console.log(`   ✓ ${results.at(-1)!.executionTimeMs}ms\n`);
+    i++;
+  }
 
   // ── Output ────────────────────────────────────────────────────────────────────
   console.log(formatResults(results));
@@ -309,4 +304,3 @@ if (require.main === module) {
 }
 
 export { benchmarkProject, formatResults, saveResults };
-

@@ -1,94 +1,94 @@
 {
   "fullAppBaseline": {
     "root": "/home/manu/vignesh/Rocket.Chat/apps/meteor/app",
-    "fileCount": 1105,
-    "estimatedTotalTokens": 298770,
+    "fileCount": 1009,
+    "estimatedTotalTokens": 317532,
     "isSampled": true
   },
   "benchmarks": [
     {
-      "projectName": "Rocket.Chat › lib/server/functions",
+      "projectName": "Rocket.Chat › lib-server-functions",
       "projectRoot": "/home/manu/vignesh/Rocket.Chat/apps/meteor/app/lib/server/functions",
       "query": "send message to room",
-      "allFilesCount": 63,
-      "allFilesTotalTokens": 15861,
+      "allFilesCount": 67,
+      "allFilesTotalTokens": 17756,
       "analyzedFileCount": 10,
-      "analyzedOriginalTokens": 4446,
-      "analyzedSkeletonTokens": 1599,
-      "tokenReductionVsFullScan": 89.91866843200302,
-      "tokenReductionVsTopN": 64.03508771929825,
+      "analyzedOriginalTokens": 5655,
+      "analyzedSkeletonTokens": 2359,
+      "tokenReductionVsFullScan": 86.71435007884659,
+      "tokenReductionVsTopN": 58.284703801945184,
       "enhancedRanking": true,
-      "executionTimeMs": 92704,
+      "executionTimeMs": 73382,
       "topFiles": [
         {
-          "path": "sendMessage.ts",
-          "score": 0.827822681017449,
-          "originalTokens": 806,
-          "skeletonTokens": 243,
-          "reductionPct": 69.85111662531017
+          "path": "app/lib/server/functions/sendMessage.ts",
+          "score": 0.8102850165046247,
+          "originalTokens": 822,
+          "skeletonTokens": 276,
+          "reductionPct": 66.42335766423358
         },
         {
-          "path": "deleteMessage.ts",
-          "score": 0.5391337395905121,
-          "originalTokens": 578,
-          "skeletonTokens": 197,
-          "reductionPct": 65.91695501730104
+          "path": "app/lib/server/functions/processWebhookMessage.ts",
+          "score": 0.5810760554235949,
+          "originalTokens": 706,
+          "skeletonTokens": 329,
+          "reductionPct": 53.39943342776204
         },
         {
-          "path": "saveUser/sendUserEmail.ts",
-          "score": 0.5063837520564719,
-          "originalTokens": 146,
+          "path": "app/lib/server/functions/deleteMessage.ts",
+          "score": 0.5401550752933443,
+          "originalTokens": 569,
+          "skeletonTokens": 198,
+          "reductionPct": 65.20210896309314
+        },
+        {
+          "path": "app/lib/server/functions/saveUser/sendUserEmail.ts",
+          "score": 0.5061837592654055,
+          "originalTokens": 159,
+          "skeletonTokens": 120,
+          "reductionPct": 24.528301886792452
+        },
+        {
+          "path": "app/lib/server/functions/removeUserFromRoom.ts",
+          "score": 0.43360671358368974,
+          "originalTokens": 479,
+          "skeletonTokens": 460,
+          "reductionPct": 3.966597077244259
+        },
+        {
+          "path": "app/lib/server/functions/getRoomByNameOrIdWithOptionToJoin.ts",
+          "score": 0.40077218800286274,
+          "originalTokens": 357,
           "skeletonTokens": 107,
-          "reductionPct": 26.71232876712329
+          "reductionPct": 70.02801120448179
         },
         {
-          "path": "addUserToRoom.ts",
-          "score": 0.46495982063691066,
-          "originalTokens": 525,
-          "skeletonTokens": 138,
-          "reductionPct": 73.71428571428571
+          "path": "app/lib/server/functions/updateMessage.ts",
+          "score": 0.39957687590905067,
+          "originalTokens": 348,
+          "skeletonTokens": 156,
+          "reductionPct": 55.172413793103445
         },
         {
-          "path": "parseUrlsInMessage.ts",
-          "score": 0.438773825090041,
-          "originalTokens": 108,
-          "skeletonTokens": 97,
-          "reductionPct": 10.185185185185185
-        },
-        {
-          "path": "processWebhookMessage.ts",
-          "score": 0.43619594857006605,
-          "originalTokens": 451,
-          "skeletonTokens": 187,
-          "reductionPct": 58.536585365853654
-        },
-        {
-          "path": "updateMessage.ts",
-          "score": 0.40267586732692057,
-          "originalTokens": 383,
-          "skeletonTokens": 130,
-          "reductionPct": 66.0574412532637
-        },
-        {
-          "path": "removeUserFromRoom.ts",
-          "score": 0.3962297101867337,
-          "originalTokens": 279,
-          "skeletonTokens": 107,
-          "reductionPct": 61.648745519713266
-        },
-        {
-          "path": "createRoom.ts",
+          "path": "app/lib/server/functions/createRoom.ts",
           "score": 0.391304347826087,
-          "originalTokens": 818,
-          "skeletonTokens": 291,
-          "reductionPct": 64.42542787286064
+          "originalTokens": 1021,
+          "skeletonTokens": 322,
+          "reductionPct": 68.46229187071499
         },
         {
-          "path": "getRoomByNameOrIdWithOptionToJoin.ts",
-          "score": 0.38187829055098665,
-          "originalTokens": 352,
-          "skeletonTokens": 102,
-          "reductionPct": 71.02272727272727
+          "path": "app/lib/server/functions/createDirectRoom.ts",
+          "score": 0.3894192029194538,
+          "originalTokens": 701,
+          "skeletonTokens": 229,
+          "reductionPct": 67.3323823109843
+        },
+        {
+          "path": "app/lib/server/functions/addUserToRoom.ts",
+          "score": 0.3865206521948161,
+          "originalTokens": 493,
+          "skeletonTokens": 162,
+          "reductionPct": 67.13995943204868
         }
       ]
     },
@@ -96,85 +96,85 @@
       "projectName": "Rocket.Chat › authorization",
       "projectRoot": "/home/manu/vignesh/Rocket.Chat/apps/meteor/app/authorization",
       "query": "user permissions and access control",
-      "allFilesCount": 22,
-      "allFilesTotalTokens": 4886,
+      "allFilesCount": 20,
+      "allFilesTotalTokens": 4378,
       "analyzedFileCount": 10,
-      "analyzedOriginalTokens": 3486,
-      "analyzedSkeletonTokens": 719,
-      "tokenReductionVsFullScan": 85.28448628735161,
-      "tokenReductionVsTopN": 79.37464142283419,
+      "analyzedOriginalTokens": 3415,
+      "analyzedSkeletonTokens": 796,
+      "tokenReductionVsFullScan": 81.81818181818183,
+      "tokenReductionVsTopN": 76.69106881405564,
       "enhancedRanking": true,
-      "executionTimeMs": 21641,
+      "executionTimeMs": 17584,
       "topFiles": [
         {
-          "path": "server/constant/permissions.ts",
-          "score": 0.37972677373009095,
-          "originalTokens": 1472,
+          "path": "app/authorization/server/constant/permissions.ts",
+          "score": 0.3830771229116978,
+          "originalTokens": 1399,
           "skeletonTokens": 12,
-          "reductionPct": 99.18478260869566
+          "reductionPct": 99.14224446032881
         },
         {
-          "path": "client/hasPermission.ts",
-          "score": 0.2308189722600526,
-          "originalTokens": 306,
-          "skeletonTokens": 182,
-          "reductionPct": 40.52287581699346
+          "path": "app/authorization/server/methods/removeUserFromRole.ts",
+          "score": 0.24853979836456766,
+          "originalTokens": 253,
+          "skeletonTokens": 63,
+          "reductionPct": 75.09881422924902
         },
         {
-          "path": "server/methods/removeUserFromRole.ts",
-          "score": 0.22940936358195899,
-          "originalTokens": 331,
-          "skeletonTokens": 64,
-          "reductionPct": 80.66465256797582
-        },
-        {
-          "path": "server/functions/getUsersInRole.ts",
+          "path": "app/authorization/server/functions/getUsersInRole.ts",
           "score": 0.2208695652173913,
           "originalTokens": 234,
           "skeletonTokens": 121,
           "reductionPct": 48.29059829059829
         },
         {
-          "path": "server/functions/canAccessRoom.ts",
-          "score": 0.21130434782608695,
+          "path": "app/authorization/server/methods/addUserToRole.ts",
+          "score": 0.22034652176421413,
+          "originalTokens": 254,
+          "skeletonTokens": 63,
+          "reductionPct": 75.19685039370079
+        },
+        {
+          "path": "app/authorization/server/functions/canAccessRoom.ts",
+          "score": 0.21708161407806498,
           "originalTokens": 28,
           "skeletonTokens": 52,
           "reductionPct": -85.71428571428571
         },
         {
-          "path": "server/methods/addUserToRole.ts",
-          "score": 0.20295521741638803,
-          "originalTokens": 337,
-          "skeletonTokens": 64,
-          "reductionPct": 81.00890207715133
+          "path": "app/authorization/client/hasPermission.ts",
+          "score": 0.21449201718468835,
+          "originalTokens": 245,
+          "skeletonTokens": 162,
+          "reductionPct": 33.87755102040816
         },
         {
-          "path": "server/functions/upsertPermissions.ts",
+          "path": "app/authorization/server/functions/upsertPermissions.ts",
           "score": 0.1947902559676712,
-          "originalTokens": 433,
+          "originalTokens": 430,
           "skeletonTokens": 48,
-          "reductionPct": 88.91454965357968
+          "reductionPct": 88.83720930232558
         },
         {
-          "path": "server/functions/canDeleteMessage.ts",
+          "path": "app/authorization/server/functions/canSendMessage.ts",
+          "score": 0.16212048860673672,
+          "originalTokens": 262,
+          "skeletonTokens": 134,
+          "reductionPct": 48.854961832061065
+        },
+        {
+          "path": "app/authorization/server/functions/canDeleteMessage.ts",
           "score": 0.14782608695652175,
-          "originalTokens": 223,
-          "skeletonTokens": 70,
-          "reductionPct": 68.60986547085201
+          "originalTokens": 233,
+          "skeletonTokens": 84,
+          "reductionPct": 63.94849785407726
         },
         {
-          "path": "server/functions/hasPermission.ts",
-          "score": 0.13516679834700912,
+          "path": "app/authorization/server/functions/hasPermission.ts",
+          "score": 0.1338397819890373,
           "originalTokens": 77,
           "skeletonTokens": 57,
           "reductionPct": 25.97402597402597
-        },
-        {
-          "path": "server/index.ts",
-          "score": 0.12173913043478261,
-          "originalTokens": 45,
-          "skeletonTokens": 49,
-          "reductionPct": -8.88888888888889
         }
       ]
     },
@@ -182,85 +182,85 @@
       "projectName": "Rocket.Chat › e2e",
       "projectRoot": "/home/manu/vignesh/Rocket.Chat/apps/meteor/app/e2e",
       "query": "end-to-end encryption key management",
-      "allFilesCount": 21,
-      "allFilesTotalTokens": 8795,
+      "allFilesCount": 12,
+      "allFilesTotalTokens": 1916,
       "analyzedFileCount": 10,
-      "analyzedOriginalTokens": 6585,
-      "analyzedSkeletonTokens": 2116,
-      "tokenReductionVsFullScan": 75.94087549744172,
-      "tokenReductionVsTopN": 67.8663629460896,
+      "analyzedOriginalTokens": 1823,
+      "analyzedSkeletonTokens": 547,
+      "tokenReductionVsFullScan": 71.4509394572025,
+      "tokenReductionVsTopN": 69.99451453647833,
       "enhancedRanking": true,
-      "executionTimeMs": 35150,
+      "executionTimeMs": 16364,
       "topFiles": [
         {
-          "path": "client/helper.ts",
-          "score": 0.5212375408090153,
-          "originalTokens": 568,
-          "skeletonTokens": 223,
-          "reductionPct": 60.73943661971831
-        },
-        {
-          "path": "server/functions/resetRoomKey.ts",
+          "path": "app/e2e/server/functions/resetRoomKey.ts",
           "score": 0.25184701088524253,
           "originalTokens": 447,
           "skeletonTokens": 129,
           "reductionPct": 71.14093959731544
         },
         {
-          "path": "server/methods/updateGroupKey.ts",
-          "score": 0.24215965787598007,
-          "originalTokens": 264,
-          "skeletonTokens": 55,
-          "reductionPct": 79.16666666666666
+          "path": "app/e2e/server/methods/updateGroupKey.ts",
+          "score": 0.2352593064105948,
+          "originalTokens": 178,
+          "skeletonTokens": 35,
+          "reductionPct": 80.33707865168539
         },
         {
-          "path": "server/functions/handleSuggestedGroupKey.ts",
+          "path": "app/e2e/server/functions/handleSuggestedGroupKey.ts",
           "score": 0.20925606146199496,
           "originalTokens": 178,
           "skeletonTokens": 40,
           "reductionPct": 77.52808988764045
         },
         {
-          "path": "server/functions/provideUsersSuggestedGroupKeys.ts",
+          "path": "app/e2e/server/functions/provideUsersSuggestedGroupKeys.ts",
           "score": 0.1866296195808947,
-          "originalTokens": 147,
-          "skeletonTokens": 86,
-          "reductionPct": 41.49659863945578
+          "originalTokens": 145,
+          "skeletonTokens": 64,
+          "reductionPct": 55.86206896551724
         },
         {
-          "path": "client/rocketchat.e2e.room.ts",
-          "score": 0.16122222705374423,
-          "originalTokens": 2268,
-          "skeletonTokens": 736,
-          "reductionPct": 67.54850088183422
+          "path": "app/e2e/server/methods/setRoomKeyID.ts",
+          "score": 0.1757600543635034,
+          "originalTokens": 209,
+          "skeletonTokens": 62,
+          "reductionPct": 70.33492822966507
         },
         {
-          "path": "client/rocketchat.e2e.ts",
-          "score": 0.1582360889104527,
-          "originalTokens": 2312,
-          "skeletonTokens": 743,
-          "reductionPct": 67.86332179930797
-        },
-        {
-          "path": "server/methods/requestSubscriptionKeys.ts",
+          "path": "app/e2e/server/methods/requestSubscriptionKeys.ts",
           "score": 0.14315135871132947,
           "originalTokens": 141,
           "skeletonTokens": 31,
           "reductionPct": 78.01418439716312
         },
         {
-          "path": "server/methods/setRoomKeyID.ts",
-          "score": 0.13228179349393818,
-          "originalTokens": 191,
-          "skeletonTokens": 50,
-          "reductionPct": 73.82198952879581
+          "path": "app/e2e/server/methods/getUsersOfRoomWithoutKey.ts",
+          "score": 0.14130434782608695,
+          "originalTokens": 180,
+          "skeletonTokens": 70,
+          "reductionPct": 61.111111111111114
         },
         {
-          "path": "server/methods/fetchMyKeys.ts",
+          "path": "app/e2e/server/methods/setUserPublicAndPrivateKeys.ts",
+          "score": 0.14130434782608695,
+          "originalTokens": 180,
+          "skeletonTokens": 57,
+          "reductionPct": 68.33333333333333
+        },
+        {
+          "path": "app/e2e/server/methods/fetchMyKeys.ts",
           "score": 0.08695652173913043,
           "originalTokens": 69,
           "skeletonTokens": 23,
           "reductionPct": 66.66666666666666
+        },
+        {
+          "path": "app/e2e/server/methods/resetOwnE2EKey.ts",
+          "score": 0.08695652173913043,
+          "originalTokens": 96,
+          "skeletonTokens": 36,
+          "reductionPct": 62.5
         }
       ]
     },
@@ -268,85 +268,85 @@
       "projectName": "Rocket.Chat › file-upload",
       "projectRoot": "/home/manu/vignesh/Rocket.Chat/apps/meteor/app/file-upload",
       "query": "file upload and media handling",
-      "allFilesCount": 21,
-      "allFilesTotalTokens": 7276,
+      "allFilesCount": 19,
+      "allFilesTotalTokens": 8358,
       "analyzedFileCount": 10,
-      "analyzedOriginalTokens": 5449,
-      "analyzedSkeletonTokens": 1832,
-      "tokenReductionVsFullScan": 74.82133040131941,
-      "tokenReductionVsTopN": 66.37915213800697,
+      "analyzedOriginalTokens": 7061,
+      "analyzedSkeletonTokens": 2171,
+      "tokenReductionVsFullScan": 74.02488633644413,
+      "tokenReductionVsTopN": 69.25364679223905,
       "enhancedRanking": true,
-      "executionTimeMs": 55380,
+      "executionTimeMs": 37461,
       "topFiles": [
         {
-          "path": "server/lib/FileUpload.ts",
-          "score": 0.614818788028734,
-          "originalTokens": 2416,
-          "skeletonTokens": 1042,
-          "reductionPct": 56.87086092715232
+          "path": "app/file-upload/server/lib/FileUpload.ts",
+          "score": 0.6373108913457359,
+          "originalTokens": 2736,
+          "skeletonTokens": 1201,
+          "reductionPct": 56.10380116959064
         },
         {
-          "path": "ufs/Webdav/server.ts",
-          "score": 0.5341953036646068,
+          "path": "app/file-upload/ufs/Webdav/server.ts",
+          "score": 0.5408761610073499,
           "originalTokens": 396,
           "skeletonTokens": 102,
           "reductionPct": 74.24242424242425
         },
         {
-          "path": "ufs/GoogleStorage/server.ts",
-          "score": 0.4857246984252275,
-          "originalTokens": 364,
+          "path": "app/file-upload/ufs/GoogleStorage/server.ts",
+          "score": 0.4910787832278653,
+          "originalTokens": 372,
           "skeletonTokens": 106,
-          "reductionPct": 70.87912087912088
+          "reductionPct": 71.50537634408603
         },
         {
-          "path": "ufs/AmazonS3/server.ts",
-          "score": 0.4519065885862139,
-          "originalTokens": 443,
+          "path": "app/file-upload/ufs/AmazonS3/server.ts",
+          "score": 0.43986098420224706,
+          "originalTokens": 458,
           "skeletonTokens": 131,
-          "reductionPct": 70.42889390519187
+          "reductionPct": 71.39737991266377
         },
         {
-          "path": "server/methods/sendFileMessage.ts",
-          "score": 0.28695652173913044,
-          "originalTokens": 648,
-          "skeletonTokens": 188,
-          "reductionPct": 70.98765432098766
+          "path": "app/file-upload/server/lib/FileUpload.spec.ts",
+          "score": 0.3768682608946489,
+          "originalTokens": 1130,
+          "skeletonTokens": 86,
+          "reductionPct": 92.38938053097345
         },
         {
-          "path": "client/lib/fileUploadHandler.ts",
-          "score": 0.2782608695652174,
-          "originalTokens": 75,
-          "skeletonTokens": 20,
-          "reductionPct": 73.33333333333333
+          "path": "app/file-upload/server/methods/sendFileMessage.ts",
+          "score": 0.31452108696906356,
+          "originalTokens": 688,
+          "skeletonTokens": 191,
+          "reductionPct": 72.23837209302324
         },
         {
-          "path": "server/lib/FileUpload.spec.ts",
-          "score": 0.27755533249803993,
-          "originalTokens": 461,
-          "skeletonTokens": 61,
-          "reductionPct": 86.76789587852495
-        },
-        {
-          "path": "server/lib/ranges.ts",
+          "path": "app/file-upload/server/lib/ranges.ts",
           "score": 0.22234717392558534,
           "originalTokens": 190,
           "skeletonTokens": 80,
           "reductionPct": 57.89473684210527
         },
         {
-          "path": "server/config/FileSystem.ts",
+          "path": "app/file-upload/server/config/FileSystem.ts",
           "score": 0.21739130434782608,
           "originalTokens": 417,
           "skeletonTokens": 89,
           "reductionPct": 78.65707434052757
         },
         {
-          "path": "lib/FileUploadBase.ts",
+          "path": "app/file-upload/lib/FileUploadBase.ts",
           "score": 0.19130434782608696,
           "originalTokens": 39,
           "skeletonTokens": 13,
           "reductionPct": 66.66666666666666
+        },
+        {
+          "path": "app/file-upload/server/config/GridFS.ts",
+          "score": 0.16521739130434782,
+          "originalTokens": 635,
+          "skeletonTokens": 172,
+          "reductionPct": 72.91338582677164
         }
       ]
     }

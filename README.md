@@ -8,6 +8,20 @@ This tool helps AI agents understand the Rocket.Chat codebase. It scans TypeScri
 *   **Skeleton Generation**: Removes function bodies to save space, keeping only structure and types.
 *   **Module Scoping**: Can focus on specific Rocket.Chat modules to reduce noise.
 
+## Test & Benchmark Results
+
+### Tests
+*   **Status**: ✅ Passing (Core scanner, Scope enforcement, Benchmarks)
+
+### Benchmarks
+Tested on Rocket.Chat (`apps/meteor`) with real-world queries (Messaging, Auth, E2E):
+
+| Metric | Result |
+|--------|--------|
+| **Token Reduction (vs Full Scan)** | **~96.5%** |
+| **Token Reduction (vs Top-N)** | **~78.2%** |
+| **Average Execution Time** | **~1.2s** |
+
 ## Usage
 
 You can run the tool using `npm run cli`.

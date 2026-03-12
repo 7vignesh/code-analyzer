@@ -1,0 +1,14 @@
+{
+  "name": "rc-code-analyzer-extension",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

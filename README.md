@@ -55,6 +55,29 @@ npm run cli -- --question "permission checks" --modules authorization
 *   `--limit`: How many files to return (default: 10).
 *   `--modules`: Comma-separated list of modules to filter by.
 *   `--with-mapping`: Creates a map of symbols to find definitions later.
+*   `--skip-cache`: Force full analysis without caching.
+
+#### Caching
+
+The tool caches analysis results for faster repeated queries. Cache is stored in `.code-analyzer-cache/`.
+
+**Cache management:**
+```bash
+# View cache statistics
+npm run cli -- --cache-stats
+
+# Clear cache
+npm run cli -- --cache-clear
+
+# Skip cache for current query
+npm run cli -- --question "how are messages sent?" --skip-cache
+```
+
+**Cache Details:**
+- **Strategy**: Hybrid (in-memory + persistent disk cache)
+- **Invalidation**: MD5 file hashing (detects changes automatically)
+- **TTL**: 24 hours
+- **Location**: `.code-analyzer-cache/`
 
 ### Option 2: Gemini CLI Integration (MCP Server)
 

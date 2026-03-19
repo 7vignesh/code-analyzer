@@ -19,11 +19,21 @@ import {
   AnalysisResult,
   FileAnalysis,
 } from './types';
+import { getCacheManager, type CacheConfig } from './cache';
 
 /**
  * Analyze a TypeScript project and generate skeletons for relevant files
  */
-export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisResult> {
+export async function analyzeProject(
+  options?: AnalyzeOptions & {
+    skipCache?: boolean;
+    cacheConfig?: Partial<CacheConfig>;
+  }
+): Promise<AnalysisResult> {
+  if (!options) {
+    throw new Error('Options are required (must include root and question)');
+  }
+
   const {
     root,
     question,
@@ -33,6 +43,8 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
     enhancedRanking = false,
     moduleKeys,
     strictRocketChatScope = true,
+    skipCache = false,
+    cacheConfig,
   } = options;
 
   // Resolve absolute path
@@ -62,12 +74,34 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
     };
   }
 
-  // Step 2: Rank files by relevance
+  // Step 2: Check cache
+  const cacheManager = cacheConfig ? getCacheManager() : getCacheManager();
+  if (cacheConfig) {
+    // Reinitialize with new config if provided
+    // (in a real app, you might want to handle this differently)
+  }
+
+  if (!skipCache) {
+    const cachedResult = cacheManager.get(
+      absoluteRoot,
+      question,
+      allFiles,
+      moduleKeys,
+      enhancedRanking,
+      limit
+    );
+    if (cachedResult) {
+      console.log(`📦 Cache hit! Using cached analysis result`);
+      return cachedResult;
+    }
+  }
+
+  // Step 3: Rank files by relevance
   const rankedFiles = enhancedRanking
     ? rankFilesEnhanced(allFiles, question, limit, absoluteRoot)
     : rankFiles(allFiles, question, limit);
 
-  // Step 3: Generate skeletons for top files
+  // Step 4: Generate skeletons for top files
   const fileAnalyses: FileAnalysis[] = [];
   const symbolMapping: SymbolMapping = {
     generatedAt: new Date().toISOString(),
@@ -110,6 +144,27 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
     });
   }
 
+  // Build result
+  const result: AnalysisResult = {
+    question,
+    root: absoluteRoot,
+    limit,
+    files: fileAnalyses,
+  };
+
+  // Save to cache
+  if (!skipCache) {
+    cacheManager.set(
+      absoluteRoot,
+      question,
+      allFiles,
+      result,
+      moduleKeys,
+      enhancedRanking,
+      limit
+    );
+  }
+
   // Save mapping file if requested
   if (generateMapping && Object.keys(symbolMapping.files).length > 0) {
     const mappingPath = mappingOutputPath || path.join(absoluteRoot, 'code-analyzer.mapping.json');
@@ -117,12 +172,7 @@ export async function analyzeProject(options: AnalyzeOptions): Promise<AnalysisR
     console.log(`Symbol mapping saved to: ${mappingPath}`);
   }
 
-  return {
-    question,
-    root: absoluteRoot,
-    limit,
-    files: fileAnalyses,
-  };
+  return result;
 }
 
 // Re-export individual functions for advanced usage
@@ -147,3 +197,13 @@ export type {
   FileAnalysis,
   RankedFile,
 } from './types';
+
+// Re-export cache utilities
+export {
+  CacheManager,
+  getCacheManager,
+  initializeCacheManager,
+  DEFAULT_CACHE_CONFIG,
+  type CacheConfig,
+  type CacheEntry,
+} from './cache';

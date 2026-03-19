@@ -4,7 +4,7 @@
  * CLI entry point for rc-code-skeletonizer
  */
 
-import { analyzeProject } from './index';
+import { analyzeProject, getCacheManager } from './index';
 
 interface CliArgs {
   root: string;
@@ -13,6 +13,8 @@ interface CliArgs {
   generateMapping: boolean;
   mappingOutputPath?: string;
   moduleKeys?: string[];
+  skipCache?: boolean;
+  cacheCommand?: 'clear' | 'stats';
 }
 
 /**
@@ -27,6 +29,8 @@ function parseArgs(): CliArgs | null {
   let generateMapping = false;
   let mappingOutputPath: string | undefined;
   let moduleKeys: string[] | undefined;
+  let skipCache = false;
+  let cacheCommand: 'clear' | 'stats' | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -53,6 +57,12 @@ function parseArgs(): CliArgs | null {
     } else if (arg === '--modules' && i + 1 < args.length) {
       moduleKeys = args[i + 1].split(',').map(k => k.trim());
       i++;
+    } else if (arg === '--skip-cache') {
+      skipCache = true;
+    } else if (arg === '--cache-clear') {
+      cacheCommand = 'clear';
+    } else if (arg === '--cache-stats') {
+      cacheCommand = 'stats';
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       return null;
@@ -63,13 +73,18 @@ function parseArgs(): CliArgs | null {
     }
   }
 
+  // Handle cache commands
+  if (cacheCommand) {
+    return { root, question: '', limit, generateMapping, moduleKeys, cacheCommand };
+  }
+
   if (!question) {
-    console.error('Error: --question is required\n');
+    console.error('Error: --question is required (or use --cache-* for cache management)\n');
     printHelp();
     return null;
   }
 
-  return { root, question, limit, generateMapping, mappingOutputPath, moduleKeys };
+  return { root, question, limit, generateMapping, mappingOutputPath, moduleKeys, skipCache };
 }
 
 /**
@@ -81,6 +96,8 @@ rc-skel - TypeScript Code Skeletonizer
 
 Usage:
   rc-skel --question "<text>" [options]
+  rc-skel --cache-clear    # Clear all caches
+  rc-skel --cache-stats    # Show cache statistics
 
 Options:
   --root <path>            Project root directory (default: current directory, expects Rocket.Chat Meteor app)
@@ -89,14 +106,18 @@ Options:
   --with-mapping           Generate symbol mapping for on-demand retrieval
   --modules <keys>         Comma-separated list of module keys (e.g. lib-server-functions, authorization)
   --mapping-output <path>  Custom path for mapping file (implies --with-mapping)
+  --skip-cache             Skip cache and force full analysis
+  --cache-clear            Clear all cached analysis results
+  --cache-stats            Show cache statistics (hits, misses, size)
   --help, -h               Show this help message
 
 Example:
   rc-skel --question "authentication logic" --limit 5
   rc-skel --root ./my-project --question "database models"
   rc-skel --question "API endpoints" --with-mapping
-  rc-skel --question "permissions" --modules authorization
-  rc-skel --question "user management" --mapping-output ./mapping.json
+  rc-skel --question "permissions" --modules authorization --skip-cache
+  rc-skel --cache-stats
+  rc-skel --cache-clear
 
 Output:
   JSON object with ranked files and their code skeletons
@@ -114,6 +135,26 @@ async function main(): Promise<void> {
   }
 
   try {
+    // Handle cache commands
+    if (args.cacheCommand === 'clear') {
+      const cacheManager = getCacheManager();
+      cacheManager.clear();
+      console.log('✅ Cache cleared successfully');
+      process.exit(0);
+    }
+
+    if (args.cacheCommand === 'stats') {
+      const cacheManager = getCacheManager();
+      const stats = cacheManager.getStats();
+      console.log('\n📊 Cache Statistics:');
+      console.log(`   Hits: ${stats.hits}`);
+      console.log(`   Misses: ${stats.misses}`);
+      console.log(`   Hit Rate: ${stats.hitRate}%`);
+      console.log(`   Cache Size: ${(stats.cacheSize / 1024).toFixed(2)} KB`);
+      console.log(`   Cache Dir: ${cacheManager.getCacheDir()}\n`);
+      process.exit(0);
+    }
+
     const result = await analyzeProject(args);
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {

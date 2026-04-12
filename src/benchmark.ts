@@ -30,6 +30,10 @@ interface BenchmarkResult {
   analyzedSkeletonTokens: number;
   tokenReductionVsFullScan: number;   // skeleton vs full-repo scan
   tokenReductionVsTopN: number;       // skeleton vs top-N original files
+  top1KeywordCoverage: number;
+  avgTopKKeywordCoverage: number;
+  pathIntentMatchRate: number;
+  directoryDiversity: number;
   enhancedRanking: boolean;
   executionTimeMs: number;
   topFiles: {
@@ -39,6 +43,63 @@ interface BenchmarkResult {
     skeletonTokens: number;
     reductionPct: number;
   }[];
+}
+
+function extractQueryTerms(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(term => term.length > 2);
+}
+
+function computeKeywordCoverage(pathValue: string, skeleton: string, terms: string[]): number {
+  if (terms.length === 0) return 0;
+  const haystack = `${pathValue} ${skeleton}`.toLowerCase();
+  const hits = terms.filter(term => haystack.includes(term)).length;
+  return hits / terms.length;
+}
+
+function computeRankingQuality(
+  files: { path: string; skeleton: string }[],
+  query: string
+): {
+  top1KeywordCoverage: number;
+  avgTopKKeywordCoverage: number;
+  pathIntentMatchRate: number;
+  directoryDiversity: number;
+} {
+  if (files.length === 0) {
+    return {
+      top1KeywordCoverage: 0,
+      avgTopKKeywordCoverage: 0,
+      pathIntentMatchRate: 0,
+      directoryDiversity: 0,
+    };
+  }
+
+  const terms = extractQueryTerms(query);
+  const topK = files.slice(0, Math.min(5, files.length));
+  const coverages = topK.map(file => computeKeywordCoverage(file.path, file.skeleton, terms));
+
+  const top1KeywordCoverage = coverages[0] ?? 0;
+  const avgTopKKeywordCoverage = coverages.reduce((sum, value) => sum + value, 0) / topK.length;
+
+  const pathIntentMatches = topK.filter(file =>
+    terms.some(term => file.path.toLowerCase().includes(term))
+  ).length;
+  const pathIntentMatchRate = pathIntentMatches / topK.length;
+
+  const uniqueDirs = new Set(
+    topK.map(file => path.dirname(file.path).toLowerCase())
+  );
+  const directoryDiversity = uniqueDirs.size / topK.length;
+
+  return {
+    top1KeywordCoverage,
+    avgTopKKeywordCoverage,
+    pathIntentMatchRate,
+    directoryDiversity,
+  };
 }
 
 export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
@@ -136,6 +197,11 @@ async function benchmarkProject(
       ? ((analyzedOriginal - analyzedSkeleton) / analyzedOriginal) * 100
       : 0;
 
+  const rankingQuality = computeRankingQuality(
+    result.files.map(file => ({ path: file.path, skeleton: file.skeleton })),
+    query
+  );
+
   return {
     projectName,
     projectRoot: moduleFullPath,
@@ -147,6 +213,10 @@ async function benchmarkProject(
     analyzedSkeletonTokens: analyzedSkeleton,
     tokenReductionVsFullScan,
     tokenReductionVsTopN,
+    top1KeywordCoverage: rankingQuality.top1KeywordCoverage,
+    avgTopKKeywordCoverage: rankingQuality.avgTopKKeywordCoverage,
+    pathIntentMatchRate: rankingQuality.pathIntentMatchRate,
+    directoryDiversity: rankingQuality.directoryDiversity,
     enhancedRanking: options.enhancedRanking ?? true,
     executionTimeMs,
     topFiles,
@@ -176,6 +246,10 @@ function formatResults(results: BenchmarkResult[]): string {
     lines.push(`        Skeleton tokens sent : ${r.analyzedSkeletonTokens.toLocaleString()}`);
     lines.push(`        Reduction vs full scan  : ${r.tokenReductionVsFullScan.toFixed(1)}% ⬇️`);
     lines.push(`        Reduction vs top-N raw  : ${r.tokenReductionVsTopN.toFixed(1)}% ⬇️`);
+    lines.push(`        Top-1 keyword coverage  : ${(r.top1KeywordCoverage * 100).toFixed(1)}%`);
+    lines.push(`        Avg top-K coverage      : ${(r.avgTopKKeywordCoverage * 100).toFixed(1)}%`);
+    lines.push(`        Path intent match rate  : ${(r.pathIntentMatchRate * 100).toFixed(1)}%`);
+    lines.push(`        Directory diversity     : ${(r.directoryDiversity * 100).toFixed(1)}%`);
     lines.push(`        Execution time          : ${r.executionTimeMs}ms`);
     lines.push('');
     lines.push(`    📁  Top Ranked Files:`);
@@ -197,6 +271,12 @@ function formatResults(results: BenchmarkResult[]): string {
     results.reduce((s, r) => s + r.tokenReductionVsFullScan, 0) / results.length;
   const avgReductionTopN =
     results.reduce((s, r) => s + r.tokenReductionVsTopN, 0) / results.length;
+  const avgTop1Coverage =
+    results.reduce((s, r) => s + r.top1KeywordCoverage, 0) / results.length;
+  const avgTopKCoverage =
+    results.reduce((s, r) => s + r.avgTopKKeywordCoverage, 0) / results.length;
+  const avgPathIntentMatch =
+    results.reduce((s, r) => s + r.pathIntentMatchRate, 0) / results.length;
   const avgTime =
     results.reduce((s, r) => s + r.executionTimeMs, 0) / results.length;
 
@@ -205,6 +285,9 @@ function formatResults(results: BenchmarkResult[]): string {
   lines.push(`    Benchmarks run               : ${results.length}`);
   lines.push(`    Avg reduction vs full scan   : ${avgReductionFullScan.toFixed(1)}%`);
   lines.push(`    Avg reduction vs top-N raw   : ${avgReductionTopN.toFixed(1)}%`);
+  lines.push(`    Avg top-1 coverage           : ${(avgTop1Coverage * 100).toFixed(1)}%`);
+  lines.push(`    Avg top-K coverage           : ${(avgTopKCoverage * 100).toFixed(1)}%`);
+  lines.push(`    Avg path intent match rate   : ${(avgPathIntentMatch * 100).toFixed(1)}%`);
   lines.push(`    Avg execution time           : ${avgTime.toFixed(0)}ms`);
   lines.push('═══════════════════════════════════════════════════════════════════════\n');
 
@@ -223,6 +306,12 @@ function saveResults(results: BenchmarkResult[], outputPath: string): void {
         results.reduce((s, r) => s + r.tokenReductionVsFullScan, 0) / results.length,
       avgReductionVsTopN:
         results.reduce((s, r) => s + r.tokenReductionVsTopN, 0) / results.length,
+      avgTop1KeywordCoverage:
+        results.reduce((s, r) => s + r.top1KeywordCoverage, 0) / results.length,
+      avgTopKKeywordCoverage:
+        results.reduce((s, r) => s + r.avgTopKKeywordCoverage, 0) / results.length,
+      avgPathIntentMatchRate:
+        results.reduce((s, r) => s + r.pathIntentMatchRate, 0) / results.length,
       avgExecutionTimeMs:
         results.reduce((s, r) => s + r.executionTimeMs, 0) / results.length,
     },

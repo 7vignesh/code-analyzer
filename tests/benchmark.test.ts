@@ -25,5 +25,14 @@ describe('Benchmark Tests', () => {
     // Verify that the project root matches the expected module path
     const expectedPath = path.join(rcMeteorRoot, 'app/lib/server/functions');
     expect(benchmarkResult.projectRoot).toBe(expectedPath);
+
+    expect(benchmarkResult.top1KeywordCoverage).toBeGreaterThanOrEqual(0);
+    expect(benchmarkResult.top1KeywordCoverage).toBeLessThanOrEqual(1);
+    expect(benchmarkResult.avgTopKKeywordCoverage).toBeGreaterThanOrEqual(0);
+    expect(benchmarkResult.avgTopKKeywordCoverage).toBeLessThanOrEqual(1);
+    expect(benchmarkResult.pathIntentMatchRate).toBeGreaterThanOrEqual(0);
+    expect(benchmarkResult.pathIntentMatchRate).toBeLessThanOrEqual(1);
+    expect(benchmarkResult.directoryDiversity).toBeGreaterThanOrEqual(0);
+    expect(benchmarkResult.directoryDiversity).toBeLessThanOrEqual(1);
   });
 });

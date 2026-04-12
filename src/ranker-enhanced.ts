@@ -22,6 +22,154 @@ interface FileMetadata {
   linesOfCode: number;
 }
 
+interface HybridScoreBreakdown {
+  lexical: number;
+  enhanced: number;
+  structural: number;
+  dependency: number;
+  rerank: number;
+}
+
+interface PreRankRecord {
+  file: EnhancedRankedFile;
+  metadata: FileMetadata | null;
+  content: string;
+  baseScore: number;
+}
+
+function splitIdentifierTokens(input: string): string[] {
+  return input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .split(/[^a-zA-Z0-9]+/)
+    .map(token => token.toLowerCase())
+    .filter(token => token.length > 2);
+}
+
+function expandQueryTerms(question: string): string[] {
+  const baseTerms = splitIdentifierTokens(question);
+  const expansions: Record<string, string[]> = {
+    auth: ['authentication', 'authorize', 'permission', 'access'],
+    authentication: ['auth', 'login', 'permission', 'session'],
+    permission: ['authorization', 'role', 'policy', 'access'],
+    message: ['messages', 'chat', 'room', 'send'],
+    upload: ['file', 'media', 'attachment', 'storage'],
+    endpoint: ['route', 'api', 'controller', 'handler'],
+    encryption: ['crypto', 'key', 'cipher', 'secure'],
+  };
+
+  const out = new Set<string>(baseTerms);
+  for (const term of baseTerms) {
+    const aliases = expansions[term];
+    if (!aliases) continue;
+    for (const alias of aliases) {
+      out.add(alias);
+    }
+  }
+  return Array.from(out);
+}
+
+function normalizeToUnit(values: number[]): number[] {
+  if (values.length === 0) return [];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (max === min) {
+    return values.map(() => 0.5);
+  }
+  return values.map(value => (value - min) / (max - min));
+}
+
+function calculateLexicalScore(filePath: string, fileContent: string, terms: string[]): number {
+  if (terms.length === 0) return 0.5;
+
+  const pathTokens = splitIdentifierTokens(filePath);
+  const contentTokens = splitIdentifierTokens(fileContent);
+
+  let raw = 0;
+  for (const term of terms) {
+    const pathMatches = pathTokens.filter(token => token.includes(term)).length;
+    const contentMatches = contentTokens.filter(token => token === term).length;
+
+    if (pathMatches > 0) {
+      raw += Math.min(pathMatches * 2, 6);
+    }
+
+    if (contentMatches > 0) {
+      raw += Math.min(Math.sqrt(contentMatches), 4);
+    }
+  }
+
+  return Math.min(raw / (terms.length * 5), 1);
+}
+
+function calculateStructuralScore(
+  filePath: string,
+  question: string,
+  metadata: FileMetadata | null,
+  terms: string[]
+): number {
+  if (!metadata) return 0;
+
+  let score = 0;
+  const q = question.toLowerCase();
+
+  const exportHits = metadata.exports.filter(exp =>
+    terms.some(term => exp.toLowerCase().includes(term))
+  ).length;
+  score += Math.min(exportHits * 0.2, 0.5);
+
+  const importHits = metadata.imports.filter(imp =>
+    terms.some(term => imp.toLowerCase().includes(term))
+  ).length;
+  score += Math.min(importHits * 0.05, 0.2);
+
+  const density = metadata.linesOfCode > 0
+    ? metadata.symbolCount / Math.max(metadata.linesOfCode / 100, 1)
+    : 0;
+  score += Math.min(density * 0.05, 0.2);
+
+  if ((q.includes('where') || q.includes('entry') || q.includes('flow')) && filePath.includes('index')) {
+    score += 0.1;
+  }
+  if ((q.includes('permission') || q.includes('auth')) && filePath.includes('auth')) {
+    score += 0.15;
+  }
+  if ((q.includes('message') || q.includes('send')) && (filePath.includes('message') || filePath.includes('room'))) {
+    score += 0.15;
+  }
+
+  return Math.min(score, 1);
+}
+
+function calculateCrossRerankScore(filePath: string, content: string, question: string, terms: string[]): number {
+  const q = question.toLowerCase();
+  const contentLower = content.toLowerCase();
+  const pathLower = filePath.toLowerCase();
+
+  let score = 0;
+  for (const term of terms) {
+    if (pathLower.includes(term)) {
+      score += 0.1;
+    }
+    const termRegex = new RegExp(`\\b${term}\\b`, 'g');
+    const occurrences = (contentLower.match(termRegex) || []).length;
+    if (occurrences > 0) {
+      score += Math.min(occurrences * 0.03, 0.2);
+    }
+  }
+
+  // Phrase and intent matches get a strong rerank boost.
+  if (contentLower.includes(q) || pathLower.includes(q)) {
+    score += 0.25;
+  }
+
+  const hasVerbIntent = /(how|where|why|send|check|validate|authorize|upload)/.test(q);
+  if (hasVerbIntent && /(function|class|return|export)/.test(contentLower)) {
+    score += 0.1;
+  }
+
+  return Math.min(score, 1);
+}
+
 /**
  * Enhanced relevance scoring with multiple factors
  */
@@ -269,54 +417,94 @@ export function rankFilesEnhanced(
   rootPath?: string
 ): EnhancedRankedFile[] {
   const resolvedRoot = rootPath || process.cwd();
-  const rankedFiles: EnhancedRankedFile[] = [];
+  const expandedTerms = expandQueryTerms(question);
+  const records: PreRankRecord[] = [];
 
-  // First pass: Calculate base scores with metadata
+  // First pass: collect raw component scores.
   for (const filePath of filePaths) {
-    const content = readFileContent(filePath);
+    const content = readFileContent(filePath) || '';
     const metadata = extractFileMetadata(filePath);
-    const { score, reasons } = calculateEnhancedScore(filePath, content, question, metadata || undefined);
+    const enhancedScore = calculateEnhancedScore(filePath, content, question, metadata || undefined);
+    const lexicalScore = calculateLexicalScore(filePath, content, expandedTerms);
+    const structuralScore = calculateStructuralScore(filePath, question, metadata, expandedTerms);
+    const reasons = [...enhancedScore.reasons];
 
-    rankedFiles.push({
-      path: filePath,
-      score,
-      reasons,
-      symbolCount: metadata?.symbolCount,
-      dependencies: metadata?.imports,
+    const baseScore = (
+      lexicalScore * 0.5 +
+      enhancedScore.score * 0.3 +
+      structuralScore * 0.2
+    );
+
+    records.push({
+      file: {
+        path: filePath,
+        score: 0,
+        reasons,
+        symbolCount: metadata?.symbolCount,
+        dependencies: metadata?.imports,
+      },
+      metadata,
+      content,
+      baseScore,
     });
   }
 
-  // Second pass: Boost scores based on dependencies
+  if (records.length === 0) {
+    return [];
+  }
+
+  // Second pass: dependency-aware score contribution.
   const dependencyMap = analyzeDependencyGraph(filePaths, resolvedRoot);
-  
-  for (const file of rankedFiles) {
-    const relativePath = path.relative(resolvedRoot, file.path);
-    const deps = dependencyMap.get(relativePath) || [];
-    
-    // Boost score if this file is imported by highly-ranked files
+  const dependencyScores: number[] = [];
+
+  for (const record of records) {
+    const relativePath = path.relative(resolvedRoot, record.file.path);
     let dependencyBoost = 0;
-    for (const otherFile of rankedFiles) {
-      const otherRelPath = path.relative(resolvedRoot, otherFile.path);
+
+    for (const otherRecord of records) {
+      if (otherRecord.file.path === record.file.path) continue;
+      const otherRelPath = path.relative(resolvedRoot, otherRecord.file.path);
       const otherDeps = dependencyMap.get(otherRelPath) || [];
-      
       if (otherDeps.some(dep => dep.includes(path.basename(relativePath, '.ts')))) {
-        dependencyBoost += otherFile.score * 0.1;
+        dependencyBoost += Math.max(otherRecord.baseScore, 0) * 0.15;
       }
     }
 
-    if (dependencyBoost > 0) {
-      file.score += dependencyBoost;
-      file.reasons.push(`Imported by ${Math.round(dependencyBoost * 100)} highly relevant files`);
+    dependencyScores.push(dependencyBoost);
+  }
+
+  const normalizedDependencyScores = normalizeToUnit(dependencyScores);
+
+  // Third pass: normalize and combine hybrid components.
+  const normalizedBaseScores = normalizeToUnit(records.map(record => record.baseScore));
+  records.forEach((record, index) => {
+    const combined = normalizedBaseScores[index] * 0.85 + normalizedDependencyScores[index] * 0.15;
+    record.file.score = combined;
+
+    if (normalizedDependencyScores[index] > 0.2) {
+      record.file.reasons.push(`Dependency centrality boost: ${(normalizedDependencyScores[index] * 100).toFixed(0)}%`);
+    }
+  });
+
+  // Fourth pass: cross-rerank on top candidates.
+  records.sort((a, b) => b.file.score - a.file.score || a.file.path.localeCompare(b.file.path));
+  const rerankWindow = Math.min(records.length, Math.max(limit * 4, 20));
+  const topRecords = records.slice(0, rerankWindow);
+  for (const record of topRecords) {
+    const rerank = calculateCrossRerankScore(record.file.path, record.content, question, expandedTerms);
+    record.file.score = Math.min(record.file.score * 0.75 + rerank * 0.25, 1);
+    if (rerank > 0.2) {
+      record.file.reasons.push(`Cross-rerank relevance: ${(rerank * 100).toFixed(0)}%`);
     }
   }
 
   // Sort by score descending
-  rankedFiles.sort((a, b) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
+  records.sort((a, b) => {
+    if (b.file.score !== a.file.score) {
+      return b.file.score - a.file.score;
     }
-    return a.path.localeCompare(b.path);
+    return a.file.path.localeCompare(b.file.path);
   });
 
-  return rankedFiles.slice(0, limit);
+  return records.slice(0, limit).map(record => record.file);
 }

@@ -7,11 +7,14 @@ This tool helps AI agents understand the Rocket.Chat codebase. It scans TypeScri
 *   **Smart Scanning**: Finds relevant files based on your question.
 *   **Skeleton Generation**: Removes function bodies to save space, keeping only structure and types.
 *   **Module Scoping**: Can focus on specific Rocket.Chat modules to reduce noise.
+*   **Hybrid Retrieval**: Combines lexical, structural, and dependency-graph analysis for smarter file ranking.
+*   **Grounded Responses**: Agent answers include evidence citations linking to specific files and symbols.
+*   **Caching**: Hybrid in-memory + persistent disk cache for repeated queries.
 
-## Test & Benchmark Results
+## Performance
 
 ### Tests
-*   **Status**: ✅ Passing (Core scanner, Scope enforcement, Benchmarks)
+*   **Status**: ✅ Passing (Core scanner, Scope enforcement, Agent tools, Ranking)
 
 ### Benchmarks
 Tested on Rocket.Chat (`apps/meteor`) with real-world queries (Messaging, Auth, E2E):
@@ -20,7 +23,15 @@ Tested on Rocket.Chat (`apps/meteor`) with real-world queries (Messaging, Auth, 
 |--------|--------|
 | **Token Reduction (vs Full Scan)** | **~96.5%** |
 | **Token Reduction (vs Top-N)** | **~78.2%** |
+| **Avg top-1 keyword coverage** | **~75%** |
+| **Directory diversity (top-5)** | **~80%** |
 | **Average Execution Time** | **~1.2s** |
+
+**Ranking Strategy (Hybrid):**
+- **Lexical**: Path and content token matching
+- **Structural**: Export/import graph and symbol density
+- **Dependency**: Graph centrality from import relationships
+- **Cross-Rerank**: Phrase-level relevance pass on top candidates
 
 ## Usage
 
@@ -78,6 +89,27 @@ npm run cli -- --question "how are messages sent?" --skip-cache
 - **Invalidation**: MD5 file hashing (detects changes automatically)
 - **TTL**: 24 hours
 - **Location**: `.code-analyzer-cache/`
+
+#### Agent Mode (Interactive)
+
+Run the tool in interactive mode with symbol lookup and dependency analysis:
+
+```bash
+npm run cli -- --interactive --root /path/to/project
+```
+
+**Available Commands:**
+- `/help` - Show command list
+- `/files` - List currently retrieved files
+- `/symbols <query>` - Search for symbols in the codebase
+- `/symbol <symbolId>` - Get full implementation of a symbol
+- `/deps <filePath>` - Show imports and symbols for a file
+- `/refresh` - Re-analyze project with new context
+- `/stats` - Show mapping statistics
+- `/exit` - Quit
+
+**Grounded Responses:**
+Answers include an "Evidence" section that cites the exact files and symbols used, making it easy to verify answers and trace to source code.
 
 ### Option 2: Gemini CLI Integration (MCP Server)
 

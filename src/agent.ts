@@ -245,7 +245,17 @@ export class CodeAnalysisAgent {
 
     let context = userMessage;
     if (skeletonContext) {
-      context = `Here are the code skeletons for context:\n\n${skeletonContext}\n\nUser question: ${userMessage}`;
+      context = [
+        'You are a code analysis assistant.',
+        'Base your answer on the provided skeletons and tool results.',
+        'If evidence is insufficient, say so explicitly.',
+        'Include a final section titled "Evidence" with bullet points that reference concrete files or symbols used.',
+        '',
+        'Here are the code skeletons for context:',
+        skeletonContext,
+        '',
+        `User question: ${userMessage}`,
+      ].join('\n');
     }
 
     const chat = this.model.startChat({
@@ -275,6 +285,27 @@ export class CodeAnalysisAgent {
 
     responseText = response.response.text();
     return responseText;
+  }
+
+  /**
+   * Local wrapper for symbol search without model invocation.
+   */
+  searchSymbols(query: string, symbolType?: string): any {
+    return this.handleSearchSymbols(query, symbolType);
+  }
+
+  /**
+   * Local wrapper for fetching symbol implementation by ID.
+   */
+  getSymbolDetails(symbolId: string): any {
+    return this.handleGetSymbolDetails(symbolId);
+  }
+
+  /**
+   * Local wrapper for file dependency analysis.
+   */
+  analyzeFileDependencies(filePath: string): any {
+    return this.handleAnalyzeFileDependencies(filePath);
   }
 
   /**

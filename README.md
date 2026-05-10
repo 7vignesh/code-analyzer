@@ -1,4 +1,4 @@
-# Universal Code Analyzer
+# Skannr
 
 A CLI tool and MCP server that helps AI agents understand **any codebase**.
 It scans files, generates compressed structural "skeletons", and ranks results
@@ -16,7 +16,7 @@ using hybrid retrieval — reducing token usage by ~96% vs full file scans.
 ## Install
 
 ```bash
-npm install -g universal-code-analyzer
+npm install -g skannr
 ```
 
 ## Usage
@@ -25,24 +25,24 @@ npm install -g universal-code-analyzer
 
 ```bash
 # Basic
-uca --question "how does authentication work?" --root /path/to/any/repo
+skannr --question "how does authentication work?" --root /path/to/any/repo
 
 # Limit results
-uca --question "database connection setup" --root . --limit 5
+skannr --question "database connection setup" --root . --limit 5
 
 # Focus on specific modules (auto-discovered if not specified)
-uca --question "permission checks" --root . --modules auth,middleware
+skannr --question "permission checks" --root . --modules auth,middleware
 
 # Force language
-uca --question "class structure" --root /path/to/python/project --lang python
+skannr --question "class structure" --root /path/to/python/project --lang python
 
 # Interactive agent mode
-uca-agent --root /path/to/repo
+skannr-agent --root /path/to/repo
 
 # Cache management
-uca --cache-stats
-uca --cache-clear
-uca --question "..." --skip-cache
+skannr --cache-stats
+skannr --cache-clear
+skannr --question "..." --skip-cache
 ```
 
 ### MCP Server (use with Gemini CLI, Claude Code, Cursor, etc.)
@@ -50,9 +50,9 @@ uca --question "..." --skip-cache
 ```json
 {
   "mcpServers": {
-    "code-analyzer": {
+    "skannr": {
       "command": "npx",
-      "args": ["universal-code-analyzer"]
+      "args": ["skannr"]
     }
   }
 }

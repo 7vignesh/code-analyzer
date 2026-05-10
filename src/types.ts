@@ -1,5 +1,5 @@
 /**
- * Shared type definitions for universal-code-analyzer
+ * Shared type definitions for skannr
  */
 
 /**

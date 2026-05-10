@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CLI entry point for universal-code-analyzer
+ * CLI entry point for skannr
  */
 
 import { analyzeProject, getCacheManager } from './index';

@@ -1,12 +1,13 @@
 {
-  "name": "universal-code-analyzer",
+  "name": "skannr",
   "version": "0.1.0",
   "description": "A universal tool to analyze any codebase and generate semantic skeletons for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "uca": "dist/cli.js",
-    "uca-agent": "dist/agent-cli.js"
+    "skannr": "dist/cli.js",
+    "skannr-benchmark": "dist/benchmark.js",
+    "skannr-agent": "dist/agent-cli.js"
   },
   "scripts": {
     "build": "tsc",

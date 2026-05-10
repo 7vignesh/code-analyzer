@@ -1,5 +1,5 @@
 /**
- * Main library exports for universal-code-analyzer
+ * Main library exports for skannr
  */
 
 import * as path from 'path';

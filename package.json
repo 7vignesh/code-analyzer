@@ -1,12 +1,12 @@
 {
-  "name": "rc-code-skeletonizer",
+  "name": "universal-code-analyzer",
   "version": "0.1.0",
-  "description": "A tool to analyze TypeScript codebases and generate semantic skeletons for relevant files",
+  "description": "A universal tool to analyze any codebase and generate semantic skeletons for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rc-skel": "dist/cli.js",
-    "rc-agent": "dist/agent-cli.js"
+    "uca": "dist/cli.js",
+    "uca-agent": "dist/agent-cli.js"
   },
   "scripts": {
     "build": "tsc",

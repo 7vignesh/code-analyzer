@@ -4,7 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { analyzeProject } from '../../dist/index';
 
 const server = new Server(
-  { name: 'rc-code-analyzer', version: '0.1.0' },
+  { name: 'code-analyzer', version: '0.1.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -12,7 +12,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'scan_codebase',
-      description: 'Scan Rocket.Chat TypeScript files and return compressed skeletons of the most relevant ones for a question.',
+      description: 'Analyzes any codebase to answer questions about its structure and architecture. Scans files, generates structural skeletons, and ranks results using hybrid retrieval. Supports TypeScript, JavaScript, and Python. Pass the root path of any repository.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -22,7 +22,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           root: {
             type: 'string',
-            description: 'Absolute path to the Rocket.Chat repo root',
+            description: 'Absolute path to the repository root',
           },
           limit: {
             type: 'number',
@@ -31,7 +31,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           modules: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Narrow search to specific modules: lib-server-functions, authorization, e2e, file-upload',
+            description: 'Optional module keys (or directory names) to narrow the search scope',
           },
         },
         required: ['question', 'root'],

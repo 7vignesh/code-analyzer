@@ -1,9 +1,9 @@
 {
-  "name": "rc-code-analyzer",
+  "name": "code-analyzer",
   "version": "0.1.0",
-  "description": "Scan the Rocket.Chat codebase and return token-efficient skeletons",
+  "description": "Analyze any codebase and return token-efficient structural skeletons",
   "mcpServers": {
-    "rc-analyzer": {
+    "code-analyzer": {
       "command": "node",
       "args": ["${extensionPath}/dist/server.js"]
     }

@@ -1,5 +1,5 @@
 {
-  "name": "rc-code-analyzer-extension",
+  "name": "code-analyzer-extension",
   "version": "0.1.0",
   "scripts": {
     "build": "tsc"

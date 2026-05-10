@@ -4,23 +4,23 @@ import Reveal from './Reveal'
 const tabs = ['CLI Install', 'npx', 'MCP Server']
 
 const snippets = {
-  'CLI Install': `npm install -g universal-code-analyzer
+  'CLI Install': `npm install -g skannr
 
 # Ask a question about any repo
-uca --question "how does auth work?" --root /path/to/repo
+skannr --question "how does auth work?" --root /path/to/repo
 
 # Interactive agent mode
-uca-agent --root /path/to/repo`,
+skannr-agent --root /path/to/repo`,
   npx: `# Run without installing
-npx universal-code-analyzer --question "how does this work?" --root .
+npx skannr --question "how does this work?" --root .
 
 # One-time cache check
-npx universal-code-analyzer --cache-stats`,
+npx skannr --cache-stats`,
   'MCP Server': `{
   "mcpServers": {
-    "code-analyzer": {
+    "skannr": {
       "command": "npx",
-      "args": ["universal-code-analyzer"]
+      "args": ["skannr"]
     }
   }
 }`,

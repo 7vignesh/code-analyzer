@@ -6,7 +6,7 @@ export default function Footer() {
       <Reveal>
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-3">
           <div>
-            <p className="font-mono text-lg">Universal Code Analyzer</p>
+            <p className="font-mono text-lg">Skannr</p>
             <p className="mt-1 text-[#888]">Open-source · MIT License</p>
           </div>
 
@@ -22,7 +22,7 @@ export default function Footer() {
               GitHub
             </a>
             <a
-              href="https://npmjs.com/package/universal-code-analyzer"
+              href="https://npmjs.com/package/skannr"
               className="text-[#888] transition-colors hover:text-accent"
             >
               npm

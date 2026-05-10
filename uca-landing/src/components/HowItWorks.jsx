@@ -3,7 +3,7 @@ import Reveal from './Reveal'
 const steps = [
   {
     title: 'Point it at any repo',
-    code: 'uca --question "..." --root /path/to/any/project',
+    code: 'skannr --question "..." --root /path/to/any/project',
     desc: "No configuration needed. Works on repos you've never touched before. Auto-detects language and module structure from the folder layout.",
   },
   {

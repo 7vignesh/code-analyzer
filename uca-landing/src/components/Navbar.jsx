@@ -25,7 +25,7 @@ export default function Navbar() {
             href="#"
             className="inline-flex items-center gap-2 transition-transform duration-300 hover:scale-[1.03] motion-reduce:hover:scale-100"
           >
-            <span className="font-mono text-lg font-bold text-accent">uca</span>
+            <span className="font-mono text-lg font-bold text-accent">skannr</span>
             <span className="h-2 w-2 rounded-full bg-green motion-safe:animate-pulse" />
           </a>
 

@@ -30,7 +30,7 @@ export default function Hero() {
 
   const lines = useMemo(
     () => [
-      '$ uca --question "how does authentication work?" --root ./my-project',
+      '$ skannr --question "how does authentication work?" --root ./my-project',
       '',
       '✓ Detected language: TypeScript',
       '✓ Discovered modules: auth, api, middleware, db',
@@ -81,7 +81,7 @@ export default function Hero() {
       </h1>
 
       <p className="mt-6 max-w-xl text-center text-lg text-[#888] opacity-0 motion-safe:animate-fade-in-up motion-reduce:opacity-100 motion-reduce:translate-y-0 [animation-delay:180ms]">
-        Universal Code Analyzer helps AI assistants understand entire codebases using structural
+        Skannr helps AI assistants understand entire codebases using structural
         skeletons and hybrid ranking, so you can ask architectural questions without context limits.
       </p>
 

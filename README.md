@@ -1,195 +1,109 @@
-# Rocket.Chat Code Analyzer
+# Universal Code Analyzer
 
-This tool helps AI agents understand the Rocket.Chat codebase. It scans TypeScript files and creates compressed "skeletons" (summaries) of the code. This allows you to analyze large parts of the application without using too many tokens.
+A CLI tool and MCP server that helps AI agents understand **any codebase**.
+It scans files, generates compressed structural "skeletons", and ranks results
+using hybrid retrieval — reducing token usage by ~96% vs full file scans.
 
-## Features
+## How It Works
 
-*   **Smart Scanning**: Finds relevant files based on your question.
-*   **Skeleton Generation**: Removes function bodies to save space, keeping only structure and types.
-*   **Module Scoping**: Can focus on specific Rocket.Chat modules to reduce noise.
-*   **Hybrid Retrieval**: Combines lexical, structural, and dependency-graph analysis for smarter file ranking.
-*   **Grounded Responses**: Agent answers include evidence citations linking to specific files and symbols.
-*   **Caching**: Hybrid in-memory + persistent disk cache for repeated queries.
+1. You point it at any repo with `--root /path/to/repo`
+2. It auto-detects the language (TypeScript, JavaScript, Python, or generic fallback)
+3. It auto-discovers your project's modules from the folder structure
+4. For your question, it ranks the most relevant files using lexical + structural + dependency-graph analysis
+5. It strips function bodies from files (keeping types, signatures, imports)
+6. Returns compact skeletons an AI can reason over without blowing the context window
 
-## Performance
+## Install
 
-### Tests
-*   **Status**: ✅ Passing (Core scanner, Scope enforcement, Agent tools, Ranking)
-
-### Benchmarks
-Tested on Rocket.Chat (`apps/meteor`) with real-world queries (Messaging, Auth, E2E):
-
-| Metric | Result |
-|--------|--------|
-| **Token Reduction (vs Full Scan)** | **~96.5%** |
-| **Token Reduction (vs Top-N)** | **~78.2%** |
-| **Avg top-1 keyword coverage** | **~75%** |
-| **Directory diversity (top-5)** | **~80%** |
-| **Average Execution Time** | **~1.2s** |
-
-**Ranking Strategy (Hybrid):**
-- **Lexical**: Path and content token matching
-- **Structural**: Export/import graph and symbol density
-- **Dependency**: Graph centrality from import relationships
-- **Cross-Rerank**: Phrase-level relevance pass on top candidates
+```bash
+npm install -g universal-code-analyzer
+```
 
 ## Usage
 
-### Option 1: CLI (Direct Usage)
-
-You can run the tool using `npm run cli`.
-
-#### Basic Example
+### CLI
 
 ```bash
-npm run cli -- --question "how are messages sent?"
+# Basic
+uca --question "how does authentication work?" --root /path/to/any/repo
+
+# Limit results
+uca --question "database connection setup" --root . --limit 5
+
+# Focus on specific modules (auto-discovered if not specified)
+uca --question "permission checks" --root . --modules auth,middleware
+
+# Force language
+uca --question "class structure" --root /path/to/python/project --lang python
+
+# Interactive agent mode
+uca-agent --root /path/to/repo
+
+# Cache management
+uca --cache-stats
+uca --cache-clear
+uca --question "..." --skip-cache
 ```
 
-#### Using Modules (Recommended)
+### MCP Server (use with Gemini CLI, Claude Code, Cursor, etc.)
 
-To get better results, tell the tool which part of Rocket.Chat to look at:
-
-```bash
-npm run cli -- --question "permission checks" --modules authorization
+```json
+{
+  "mcpServers": {
+    "code-analyzer": {
+      "command": "npx",
+      "args": ["universal-code-analyzer"]
+    }
+  }
+}
 ```
 
-**Available Modules:**
-*   `lib-server-functions`
-*   `authorization`
-*   `e2e`
-*   `file-upload`
+### Config File (optional)
 
-#### All Options
+Drop a `code-analyzer.config.json` in your repo root:
 
-*   `--question`: (Required) The question you want to answer.
-*   `--root`: The folder to scan (default: current folder).
-*   `--limit`: How many files to return (default: 10).
-*   `--modules`: Comma-separated list of modules to filter by.
-*   `--with-mapping`: Creates a map of symbols to find definitions later.
-*   `--skip-cache`: Force full analysis without caching.
-
-#### Caching
-
-The tool caches analysis results for faster repeated queries. Cache is stored in `.code-analyzer-cache/`.
-
-**Cache management:**
-```bash
-# View cache statistics
-npm run cli -- --cache-stats
-
-# Clear cache
-npm run cli -- --cache-clear
-
-# Skip cache for current query
-npm run cli -- --question "how are messages sent?" --skip-cache
+```json
+{
+  "modules": {
+    "auth": ["src/auth", "lib/auth"],
+    "api": ["src/api", "src/routes"]
+  },
+  "exclude": ["**/generated/**", "**/migrations/**"],
+  "extensions": [".ts", ".js"],
+  "defaultLimit": 10
+}
 ```
 
-**Cache Details:**
-- **Strategy**: Hybrid (in-memory + persistent disk cache)
-- **Invalidation**: MD5 file hashing (detects changes automatically)
-- **TTL**: 24 hours
-- **Location**: `.code-analyzer-cache/`
+## Supported Languages
 
-#### Agent Mode (Interactive)
+| Language | Skeleton Support |
+|---|---|
+| TypeScript / TSX | Full AST (ts-morph) |
+| JavaScript / JSX | Full AST (ts-morph) |
+| Python | Regex-based (signatures + types) |
+| Others | First 50 lines (generic fallback) |
 
-Run the tool in interactive mode with symbol lookup and dependency analysis:
+## Performance
 
-```bash
-npm run cli -- --interactive --root /path/to/project
-```
+Benchmarked on large TypeScript monorepo:
 
-**Available Commands:**
-- `/help` - Show command list
-- `/files` - List currently retrieved files
-- `/symbols <query>` - Search for symbols in the codebase
-- `/symbol <symbolId>` - Get full implementation of a symbol
-- `/deps <filePath>` - Show imports and symbols for a file
-- `/refresh` - Re-analyze project with new context
-- `/stats` - Show mapping statistics
-- `/exit` - Quit
+| Metric | Result |
+|---|---|
+| Token Reduction vs Full Scan | ~96.5% |
+| Token Reduction vs Top-N | ~78.2% |
+| Avg keyword coverage | ~75% |
+| Directory diversity (top-5) | ~80% |
+| Average execution time | ~1.2s |
 
-**Grounded Responses:**
-Answers include an "Evidence" section that cites the exact files and symbols used, making it easy to verify answers and trace to source code.
-
-### Option 2: Gemini CLI Integration (MCP Server)
-
-Use this tool as an MCP (Model Context Protocol) server with Gemini CLI for AI-powered code analysis and benchmarking.
-
-#### Setup
-
-1. **Build the extension:**
-   ```bash
-   npm run build
-   cd gemini-extension && npm install && npm run build
-   ```
-
-2. **Configure Gemini CLI:**
-   
-   Create or update `~/.gemini/config.json`:
-   ```json
-   {
-     "mcpServers": {
-       "rc-code-analyzer": {
-         "command": "node",
-         "args": ["/path/to/code-analyzer/gemini-extension/dist/server.js"]
-       }
-     }
-   }
-   ```
-
-3. **Run Gemini CLI:**
-   ```bash
-   cd /path/to/code-analyzer
-   gemini
-   ```
-
-#### Example Queries with Gemini CLI
+## Interactive Agent Commands
 
 ```
-How are messages sent in Rocket.Chat?
-How does user authentication work?
-How are permissions checked?
-What is the E2E encryption flow?
+/help              Show all commands
+/files             List retrieved files
+/symbols <query>   Search for symbols
+/symbol <id>       Get full implementation
+/deps <file>       Show imports for a file
+/refresh           Re-analyze with new context
+/stats             Show mapping statistics
+/exit              Quit
 ```
-
-Gemini CLI will automatically use the `scan_codebase` tool to analyze relevant files and provide insights with token savings metrics.
-
-#### Benefits
-
-- **AI-Powered Analysis**: Gemini CLI provides context-aware insights and suggestions.
-- **Token Efficiency**: Skeletons reduce token usage by ~96.5% vs full scans.
-- **Easy Integration**: Works seamlessly with Gemini CLI's MCP protocol.
-- **Benchmarking**: Track token stats and performance across queries.
-
-
-### Install
-
-```bash
-npm install
-npm run build
-```
-
-For Gemini CLI integration:
-```bash
-cd gemini-extension
-npm install
-npm run build
-```
-
-### Testing
-
-#### Run Tests
-
-```bash
-npm test
-```
-
-#### Test MCP Server (Optional)
-
-To verify the Gemini CLI extension works correctly:
-
-```bash
-npm run build && node test-gemini-server.mjs
-```
-
-This tests tool discovery and the `scan_codebase` tool without requiring Gemini CLI.

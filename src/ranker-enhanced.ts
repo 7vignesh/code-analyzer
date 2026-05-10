@@ -3,10 +3,9 @@
  */
 
 import * as path from 'path';
-import * as fs from 'fs';
 import { readFileContent } from './scanner';
 import { RankedFile } from './types';
-import { Project, SourceFile } from 'ts-morph';
+import { getAdapter } from './languages/registry';
 
 export interface EnhancedRankedFile extends RankedFile {
   reasons: string[];
@@ -296,64 +295,12 @@ export function extractFileMetadata(filePath: string): FileMetadata | null {
   try {
     const content = readFileContent(filePath);
     if (!content) return null;
-
-    const project = new Project({
-      skipAddingFilesFromTsConfig: true,
-      compilerOptions: {
-        allowJs: true,
-        checkJs: false,
-      },
-    });
-
-    const sourceFile = project.addSourceFileAtPath(filePath);
-
-    // Extract imports
-    const imports = sourceFile.getImportDeclarations()
-      .map(imp => imp.getModuleSpecifierValue());
-
-    // Extract exports
-    const exports: string[] = [];
-    
-    // Named exports
-    sourceFile.getExportDeclarations().forEach(exp => {
-      exp.getNamedExports().forEach(named => {
-        exports.push(named.getName());
-      });
-    });
-
-    // Exported functions
-    sourceFile.getFunctions().forEach(func => {
-      if (func.isExported()) {
-        exports.push(func.getName() || 'anonymous');
-      }
-    });
-
-    // Exported classes
-    sourceFile.getClasses().forEach(cls => {
-      if (cls.isExported()) {
-        exports.push(cls.getName() || 'anonymous');
-      }
-    });
-
-    // Exported variables
-    sourceFile.getVariableStatements().forEach(varStmt => {
-      if (varStmt.isExported()) {
-        varStmt.getDeclarations().forEach(decl => {
-          exports.push(decl.getName());
-        });
-      }
-    });
-
-    // Count symbols
-    const symbolCount = 
-      sourceFile.getFunctions().length +
-      sourceFile.getClasses().length +
-      sourceFile.getInterfaces().length +
-      sourceFile.getTypeAliases().length +
-      sourceFile.getEnums().length;
-
-    // Lines of code
-    const linesOfCode = sourceFile.getEndLineNumber();
+    const adapter = getAdapter(filePath);
+    const symbols = adapter.extractSymbols(content);
+    const imports = adapter.extractImports(content);
+    const exports = symbols.filter((symbol) => symbol.kind === 'export').map((symbol) => symbol.name);
+    const symbolCount = symbols.filter((symbol) => symbol.kind !== 'export').length;
+    const linesOfCode = content.split('\n').length;
 
     return {
       imports,
@@ -381,11 +328,14 @@ export function analyzeDependencyGraph(
       if (!content) continue;
 
       const dependencies: string[] = [];
-      const importRegex = /import\s+(?:{[^}]*}|[^;]+)\s+from\s+['"]([^'"]+)['"]/g;
+      const importRegex = /(?:import\s+(?:{[^}]*}|[^;]+)\s+from\s+['"]([^'"]+)['"]|from\s+([A-Za-z0-9_./-]+)\s+import|import\s+([A-Za-z0-9_.,\s]+))/g;
       let match;
 
       while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1];
+        const importPath = (match[1] || match[2] || match[3]?.split(',')[0]?.trim() || '').trim();
+        if (!importPath) {
+          continue;
+        }
         
         // Resolve relative imports
         if (importPath.startsWith('.')) {
@@ -465,7 +415,7 @@ export function rankFilesEnhanced(
       if (otherRecord.file.path === record.file.path) continue;
       const otherRelPath = path.relative(resolvedRoot, otherRecord.file.path);
       const otherDeps = dependencyMap.get(otherRelPath) || [];
-      if (otherDeps.some(dep => dep.includes(path.basename(relativePath, '.ts')))) {
+      if (otherDeps.some(dep => dep.includes(path.parse(relativePath).name))) {
         dependencyBoost += Math.max(otherRecord.baseScore, 0) * 0.15;
       }
     }

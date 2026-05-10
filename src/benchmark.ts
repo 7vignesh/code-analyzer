@@ -1,12 +1,11 @@
 /**
  * Benchmark script for code-analyzer
- * Runs against the Rocket.Chat monorepo to demonstrate real-world token reduction.
+ * Runs against a repository root to measure token reduction.
  * Compares full-scan token cost vs skeletonized analysis across representative queries.
  */
 
 import { analyzeProject } from './index';
 import { scanTypeScriptFiles } from './scanner';
-import { ROCKET_CHAT_SCOPE_CONFIG, resolveMeteorAppRoot } from './rocket-chat-scope';
 import { countTokens } from './tokenizer';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -103,10 +102,9 @@ function computeRankingQuality(
 }
 
 export const BENCHMARK_SCENARIOS: BenchmarkScenario[] = [
-  { moduleKey: 'lib-server-functions', query: 'send message to room', limit: 10 },
-  { moduleKey: 'authorization', query: 'user permissions and access control', limit: 10 },
-  { moduleKey: 'e2e', query: 'end-to-end encryption key management', limit: 10 },
-  { moduleKey: 'file-upload', query: 'file upload and media handling', limit: 10 },
+  { moduleKey: 'src', query: 'authentication flow and permission checks', limit: 10 },
+  { moduleKey: 'lib', query: 'database connection management', limit: 10 },
+  { moduleKey: 'packages', query: 'API endpoint and routing structure', limit: 10 },
 ];
 
 /**
@@ -149,10 +147,9 @@ async function benchmarkProject(
   options: { limit?: number; enhancedRanking?: boolean } = {}
 ): Promise<BenchmarkResult> {
   const limit = options.limit ?? 10;
-  const moduleConfig = ROCKET_CHAT_SCOPE_CONFIG.modules.find(m => m.key === moduleKey);
-  if (!moduleConfig) throw new Error(`Unknown module: ${moduleKey}`);
-  
-  const moduleFullPath = path.join(resolveMeteorAppRoot(appRoot), moduleConfig.relativePath);
+  const moduleFullPath = fs.existsSync(path.join(appRoot, moduleKey))
+    ? path.join(appRoot, moduleKey)
+    : appRoot;
 
   // Baseline: estimate full-module token cost (what we are comparing against)
   const baseline = sampleDirectoryTokens(moduleFullPath, 200);
@@ -164,7 +161,6 @@ async function benchmarkProject(
     limit,
     enhancedRanking: options.enhancedRanking ?? true,
     moduleKeys: [moduleKey],
-    strictRocketChatScope: true,
     generateMapping: false,
   });
   const executionTimeMs = Date.now() - start;
@@ -230,7 +226,7 @@ function formatResults(results: BenchmarkResult[]): string {
   const lines: string[] = [];
 
   lines.push('═══════════════════════════════════════════════════════════════════════');
-  lines.push('          CODE ANALYZER BENCHMARK — Rocket.Chat Monorepo');
+  lines.push('          CODE ANALYZER BENCHMARK — Generic Repository');
   lines.push('═══════════════════════════════════════════════════════════════════════\n');
 
   for (const r of results) {
@@ -300,7 +296,7 @@ function formatResults(results: BenchmarkResult[]): string {
 function saveResults(results: BenchmarkResult[], outputPath: string): void {
   const out = {
     generatedAt: new Date().toISOString(),
-    rocketChatRoot: results[0]?.projectRoot ?? '',
+    root: results[0]?.projectRoot ?? '',
     summary: {
       avgReductionVsFullScan:
         results.reduce((s, r) => s + r.tokenReductionVsFullScan, 0) / results.length,
@@ -325,22 +321,20 @@ function saveResults(results: BenchmarkResult[], outputPath: string): void {
  * Main entry point
  */
 async function runBenchmarks(): Promise<void> {
-  const RC_METEOR = '/home/manu/vignesh/Rocket.Chat/apps/meteor';
+  const repoRoot = process.cwd();
 
   // Verify repo exists
-  if (!fs.existsSync(RC_METEOR)) {
-    console.error(`❌  Rocket.Chat not found at ${RC_METEOR}`);
-    console.error('    Clone it: git clone https://github.com/RocketChat/Rocket.Chat');
+  if (!fs.existsSync(repoRoot)) {
+    console.error(`❌  Repository not found at ${repoRoot}`);
     process.exit(1);
   }
 
-  // Full-app baseline: estimate token cost if an LLM had to read everything
-  const appRoot = `${RC_METEOR}/app`;
-  console.log('🚀  Code Analyzer — Rocket.Chat Monorepo Benchmarks\n');
-  console.log(`    Repo : ${RC_METEOR}`);
-  console.log(`    Computing full-app/ baseline (first 50 files sample)...`);
+  const appRoot = repoRoot;
+  console.log('🚀  Code Analyzer — Generic Repository Benchmarks\n');
+  console.log(`    Repo : ${repoRoot}`);
+  console.log('    Computing baseline (first 50 files sample)...');
   const fullBaseline = sampleDirectoryTokens(appRoot, 50);
-  console.log(`    Full app/ → ${fullBaseline.fileCount} .ts files, ` +
+  console.log(`    Baseline → ${fullBaseline.fileCount} .ts files, ` +
     `~${fullBaseline.totalTokens.toLocaleString()} tokens (${fullBaseline.isSampled ? 'extrapolated' : 'exact'})\n`);
 
   const results: BenchmarkResult[] = [];
@@ -349,9 +343,9 @@ async function runBenchmarks(): Promise<void> {
   for (const scenario of BENCHMARK_SCENARIOS) {
     console.log(`▶  [${i}/${BENCHMARK_SCENARIOS.length}] ${scenario.query} (${scenario.moduleKey})`);
     results.push(await benchmarkProject(
-      RC_METEOR,
+      repoRoot,
       scenario.moduleKey,
-      `Rocket.Chat › ${scenario.moduleKey}`,
+      `Repo › ${scenario.moduleKey}`,
       scenario.query,
       { limit: scenario.limit, enhancedRanking: true }
     ));

@@ -1,10 +1,9 @@
 /**
- * Main library exports for rc-code-skeletonizer
+ * Main library exports for universal-code-analyzer
  */
 
 import * as path from 'path';
-import { scanTypeScriptFiles, scanRocketChatFiles, readFileContent } from './scanner';
-import { resolveMeteorAppRoot, isRocketChatMeteorRoot } from './rocket-chat-scope';
+import { discoverModules, readFileContent, scanFiles, scanRocketChatFiles, scanTypeScriptFiles } from './scanner';
 import { rankFiles } from './ranker';
 import { rankFilesEnhanced } from './ranker-enhanced';
 import { buildSkeletonForFile } from './skeletonizer';
@@ -20,10 +19,8 @@ import {
   FileAnalysis,
 } from './types';
 import { getCacheManager, type CacheConfig } from './cache';
+import { detectRepoLanguages, getAdapter } from './languages/registry';
 
-/**
- * Analyze a TypeScript project and generate skeletons for relevant files
- */
 export async function analyzeProject(
   options?: AnalyzeOptions & {
     skipCache?: boolean;
@@ -42,28 +39,25 @@ export async function analyzeProject(
     mappingOutputPath,
     enhancedRanking = false,
     moduleKeys,
-    strictRocketChatScope = true,
+    moduleDefinitions,
+    exclude,
+    extensions,
+    lang = 'auto',
     skipCache = false,
     cacheConfig,
   } = options;
 
-  // Resolve absolute path
   const absoluteRoot = path.resolve(root);
+  const effectiveModuleKeys =
+    moduleKeys && moduleKeys.length > 0 ? moduleKeys : discoverModules(absoluteRoot);
+  const effectiveExtensions = resolveExtensions(absoluteRoot, lang, extensions);
 
-  // Step 1: Scan for TypeScript files
-  let allFiles: string[] = [];
-
-  if (strictRocketChatScope) {
-    const analysisRoot = resolveMeteorAppRoot(absoluteRoot);
-    if (!isRocketChatMeteorRoot(analysisRoot) && !process.env.SKIP_RC_CHECK) {
-      console.warn(`Warning: ${analysisRoot} does not appear to be a Rocket.Chat Meteor app root.`);
-    }
-    // Use scoped scanner
-    allFiles = scanRocketChatFiles(absoluteRoot, moduleKeys);
-  } else {
-    // Use generic scanner
-    allFiles = scanTypeScriptFiles(absoluteRoot);
-  }
+  const allFiles = scanFiles(absoluteRoot, {
+    extensions: effectiveExtensions,
+    exclude,
+    moduleKeys: effectiveModuleKeys,
+    moduleDefinitions,
+  });
 
   if (allFiles.length === 0) {
     return {
@@ -74,11 +68,9 @@ export async function analyzeProject(
     };
   }
 
-  // Step 2: Check cache
   const cacheManager = cacheConfig ? getCacheManager() : getCacheManager();
   if (cacheConfig) {
-    // Reinitialize with new config if provided
-    // (in a real app, you might want to handle this differently)
+    // cache manager behavior intentionally unchanged
   }
 
   if (!skipCache) {
@@ -86,22 +78,20 @@ export async function analyzeProject(
       absoluteRoot,
       question,
       allFiles,
-      moduleKeys,
+      effectiveModuleKeys,
       enhancedRanking,
       limit
     );
     if (cachedResult) {
-      console.log(`📦 Cache hit! Using cached analysis result`);
+      console.log('📦 Cache hit! Using cached analysis result');
       return cachedResult;
     }
   }
 
-  // Step 3: Rank files by relevance
   const rankedFiles = enhancedRanking
     ? rankFilesEnhanced(allFiles, question, limit, absoluteRoot)
     : rankFiles(allFiles, question, limit);
 
-  // Step 4: Generate skeletons for top files
   const fileAnalyses: FileAnalysis[] = [];
   const symbolMapping: SymbolMapping = {
     generatedAt: new Date().toISOString(),
@@ -116,22 +106,19 @@ export async function analyzeProject(
     }
 
     const relativePath = path.relative(absoluteRoot, rankedFile.path);
+    const adapter = getAdapter(rankedFile.path);
 
     let skeleton: string;
-    
-    if (generateMapping) {
-      // Use mapping-aware skeleton generation
-      const result = buildSkeletonWithMapping(rankedFile.path, absoluteRoot);
-      skeleton = result.skeleton;
-      
-      if (result.symbols.length > 0) {
+    if (generateMapping && adapter.name === 'typescript') {
+      const mappingResult = buildSkeletonWithMapping(rankedFile.path, absoluteRoot);
+      skeleton = mappingResult.skeleton;
+      if (mappingResult.symbols.length > 0) {
         symbolMapping.files[relativePath] = {
           originalPath: rankedFile.path,
-          symbols: result.symbols,
+          symbols: mappingResult.symbols,
         };
       }
     } else {
-      // Use standard skeleton generation
       skeleton = buildSkeletonForFile(rankedFile.path);
     }
 
@@ -144,7 +131,6 @@ export async function analyzeProject(
     });
   }
 
-  // Build result
   const result: AnalysisResult = {
     question,
     root: absoluteRoot,
@@ -152,20 +138,18 @@ export async function analyzeProject(
     files: fileAnalyses,
   };
 
-  // Save to cache
   if (!skipCache) {
     cacheManager.set(
       absoluteRoot,
       question,
       allFiles,
       result,
-      moduleKeys,
+      effectiveModuleKeys,
       enhancedRanking,
       limit
     );
   }
 
-  // Save mapping file if requested
   if (generateMapping && Object.keys(symbolMapping.files).length > 0) {
     const mappingPath = mappingOutputPath || path.join(absoluteRoot, 'code-analyzer.mapping.json');
     saveMappingToFile(symbolMapping, mappingPath);
@@ -175,11 +159,35 @@ export async function analyzeProject(
   return result;
 }
 
-// Re-export individual functions for advanced usage
+function resolveExtensions(
+  root: string,
+  lang: AnalyzeOptions['lang'],
+  explicit?: string[]
+): string[] | undefined {
+  if (explicit && explicit.length > 0) {
+    return explicit.map((ext) => ext.toLowerCase());
+  }
+
+  if (lang === 'typescript' || lang === 'javascript') {
+    return ['.ts', '.tsx', '.js', '.jsx'];
+  }
+
+  if (lang === 'python') {
+    return ['.py', '.pyi'];
+  }
+
+  if (lang === 'auto') {
+    detectRepoLanguages(root);
+    return undefined;
+  }
+
+  return undefined;
+}
+
 export { rankFiles } from './ranker';
 export { rankFilesEnhanced } from './ranker-enhanced';
 export { buildSkeletonForFile } from './skeletonizer';
-export { scanTypeScriptFiles, scanRocketChatFiles } from './scanner';
+export { scanTypeScriptFiles, scanRocketChatFiles, scanFiles, discoverModules } from './scanner';
 export { countTokens } from './tokenizer';
 export {
   buildSkeletonWithMapping,
@@ -190,7 +198,6 @@ export {
   type SymbolLocation,
 } from './mapper';
 
-// Re-export types
 export type {
   AnalyzeOptions,
   AnalysisResult,
@@ -198,7 +205,6 @@ export type {
   RankedFile,
 } from './types';
 
-// Re-export cache utilities
 export {
   CacheManager,
   getCacheManager,

@@ -123,11 +123,11 @@ function parseArgs(): AgentCliArgs | null {
  */
 function printHelp(): void {
   console.log(`
-rc-agent - AI-Powered Code Analysis Agent
+uca-agent - AI-Powered Code Analysis Agent
 
 Usage:
-  rc-agent --question "<text>" [options]
-  rc-agent --interactive [options]
+  uca-agent --question "<text>" [options]
+  uca-agent --interactive [options]
 
 Options:
   --root <path>        Project root directory (default: current directory)
@@ -139,9 +139,9 @@ Options:
   --help, -h           Show this help message
 
 Example:
-  rc-agent --question "How does authentication work?"
-  rc-agent --interactive --root ./my-project
-  rc-agent --question "Find all API endpoints" --limit 15
+  uca-agent --question "How does authentication work?"
+  uca-agent --interactive --root ./my-project
+  uca-agent --question "Find all API endpoints" --limit 15
 
 Environment Variables:
   GEMINI_API_KEY       Gemini API key (alternative to --api-key)
@@ -163,7 +163,7 @@ async function runSingleQuestion(args: AgentCliArgs): Promise<void> {
   });
 
   if (result.files.length === 0) {
-    console.log('No TypeScript files found.');
+    console.log('No files found for analysis.');
     return;
   }
 
@@ -222,7 +222,7 @@ async function runInteractive(args: AgentCliArgs): Promise<void> {
   let state = await buildState();
 
   if (state.result.files.length === 0) {
-    console.log('No TypeScript files found.');
+    console.log('No files found for analysis.');
     return;
   }
 

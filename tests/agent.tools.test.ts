@@ -11,7 +11,7 @@ describe('CodeAnalysisAgent local tool wrappers', () => {
   let agent: CodeAnalysisAgent;
 
   beforeAll(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rc-agent-test-'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uca-agent-test-'));
     sampleFile = path.join(tempDir, 'sample.ts');
     mappingPath = path.join(tempDir, 'code-analyzer.mapping.json');
 

@@ -2,21 +2,18 @@ const fs = require('fs');
 const path = require('path');
 
 // The fake repo root expected by the tests
-const root = path.join(__dirname, 'fixtures', 'rocket-chat-test-repo');
+const root = path.join(__dirname, 'fixtures');
 
 const dirs = [
-  // Valid Rocket.Chat structure
-  'apps/meteor/.meteor',
-  'apps/meteor/app/lib/server/functions',
-  'apps/meteor/app/authorization',
-  // Invalid folder for testing exclusions
-  'apps/meteor/non-allowed-folder',
+  'src/auth',
+  'src/api',
+  'node_modules',
 ];
 
 const files = [
-  'apps/meteor/app/lib/server/functions/test.ts',
-  'apps/meteor/app/authorization/permission.ts',
-  'apps/meteor/non-allowed-folder/ignored.ts',
+  'src/auth/permission.ts',
+  'src/api/routes.ts',
+  'node_modules/ignored.ts',
 ];
 
 console.log(`Creating test fixtures in: ${root}`);

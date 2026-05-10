@@ -1,50 +1,38 @@
 import * as path from 'path';
-import { scanRocketChatFiles } from '../src/scanner';
-import { ROCKET_CHAT_SCOPE_CONFIG } from '../src/rocket-chat-scope';
+import { discoverModules, scanFiles } from '../src/scanner';
 
-const rootDir = path.join(__dirname, 'fixtures/rocket-chat-test-repo');
+const rootDir = path.join(__dirname, 'fixtures');
 
-describe('scanRocketChatFiles', () => {
-  it('should include only allowed module files', () => {
-    const files = scanRocketChatFiles(rootDir);
+describe('generic scanner', () => {
+  it('discovers modules from common source folders', () => {
+    const modules = discoverModules(rootDir);
+    expect(modules).toContain('auth');
+    expect(modules).toContain('api');
+  });
+
+  it('scans only requested module keys', () => {
+    const files = scanFiles(rootDir, {
+      moduleKeys: ['auth'],
+      moduleDefinitions: {
+        auth: ['src/auth'],
+      },
+      extensions: ['.ts'],
+    });
     expect(files.length).toBeGreaterThan(0);
-
-    const allowedModulePaths = ROCKET_CHAT_SCOPE_CONFIG.modules.map(
-      (m) => path.join(rootDir, 'apps/meteor', m.relativePath)
-    );
-
     files.forEach((file) => {
-      let isAllowed = false;
-      allowedModulePaths.forEach(allowedPath => {
-        if (file.startsWith(allowedPath)) {
-          isAllowed = true;
-        }
-      });
-      expect(isAllowed).toBe(true);
+      expect(file.startsWith(path.join(rootDir, 'src/auth'))).toBe(true);
     });
   });
 
-  it('should handle moduleKeys filter correctly', () => {
-    const moduleKeys = ['lib-server-functions'];
-    const files = scanRocketChatFiles(rootDir, moduleKeys);
-
-    expect(files.length).toBeGreaterThan(0);
-
-    files.forEach((file) => {
-      expect(file.startsWith(path.join(rootDir, 'apps/meteor/app/lib/server/functions'))).toBe(true);
-    });
-  });
-
-  it('should return empty array on invalid root if no files are found', () => {
-    const invalidRoot = path.join(__dirname, 'fixtures'); // This directory doesn't contain a valid Rocket.Chat project
-    const files = scanRocketChatFiles(invalidRoot);
+  it('returns empty array on invalid root', () => {
+    const invalidRoot = path.join(__dirname, 'missing-fixtures');
+    const files = scanFiles(invalidRoot, { extensions: ['.ts'] });
     expect(files).toEqual([]);
   });
 
-  it('should exclude files from non-allowed folders', () => {
-    // Assuming you have a non-allowed folder under apps/meteor in your test repo
-    const files = scanRocketChatFiles(rootDir);
-    const excludedDir = path.join(rootDir, 'apps/meteor/non-allowed-folder');
+  it('excludes common ignored folders', () => {
+    const files = scanFiles(rootDir, { extensions: ['.ts'] });
+    const excludedDir = path.join(rootDir, 'node_modules');
 
     files.forEach((file) => {
       expect(file.startsWith(excludedDir)).toBe(false);

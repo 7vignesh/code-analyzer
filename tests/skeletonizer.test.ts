@@ -2,7 +2,6 @@
  * Tests for skeleton generation
  */
 
-import { Project } from 'ts-morph';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

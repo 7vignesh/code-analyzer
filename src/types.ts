@@ -1,19 +1,6 @@
 /**
- * Shared type definitions for rc-code-skeletonizer
+ * Shared type definitions for universal-code-analyzer
  */
-
-export interface RocketChatModuleScope {
-  key: string;
-  relativePath: string;
-  description: string;
-}
-
-export interface RocketChatScopeConfig {
-  repoRootMarker: string;
-  meteorAppPath: string;
-  modules: RocketChatModuleScope[];
-  ignoredDirs: string[];
-}
 
 /**
  * Options for analyzing a project
@@ -31,10 +18,16 @@ export interface AnalyzeOptions {
   mappingOutputPath?: string;
   /** Use enhanced ranking algorithm with dependency analysis */
   enhancedRanking?: boolean;
-  /** Optional filter for Rocket.Chat modules (e.g. ['lib-server-functions']) */
+  /** Optional filter for module keys (e.g. ['auth', 'api']) */
   moduleKeys?: string[];
-  /** Enforce Rocket.Chat specific directory structure and scoping */
-  strictRocketChatScope?: boolean;
+  /** Optional module definitions from config (module -> directory list) */
+  moduleDefinitions?: Record<string, string[]>;
+  /** Optional exclusion globs */
+  exclude?: string[];
+  /** Optional extension allow-list */
+  extensions?: string[];
+  /** Language strategy */
+  lang?: 'typescript' | 'javascript' | 'python' | 'auto';
 }
 
 /**

@@ -39,3 +39,11 @@ temp/
 
 # Cache
 .code-analyzer-cache/
+
+# Local / generated outputs (keep out of git)
+benchmark-results.json
+code-analyzer.mapping.json
+example-output.json
+
+# Accidental installs under test fixtures
+tests/fixtures/node_modules/

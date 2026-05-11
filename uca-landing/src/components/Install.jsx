@@ -9,10 +9,23 @@ const snippets = {
 # Ask a question about any repo
 skannr --question "how does auth work?" --root /path/to/repo
 
-# Interactive agent mode
+# Markdown or JSON for agents / CI
+skannr --question "where is billing?" --root . --format markdown
+skannr --question "API surface" --root . --format json
+
+# Re-run when files change (large repos, daily workflow)
+skannr --question "how does routing work?" --root . --watch
+
+# Telemetry is opt-in (or deferred); disable anytime
+skannr --telemetry-off
+
+# Interactive agent mode (separate binary)
 skannr-agent --root /path/to/repo`,
   npx: `# Run without installing
 npx skannr --question "how does this work?" --root .
+
+# Health report (JSON to stdout)
+npx skannr --report --root .
 
 # One-time cache check
 npx skannr --cache-stats`,
@@ -20,7 +33,7 @@ npx skannr --cache-stats`,
   "mcpServers": {
     "skannr": {
       "command": "npx",
-      "args": ["skannr"]
+      "args": ["-y", "skannr", "--mcp"]
     }
   }
 }`,

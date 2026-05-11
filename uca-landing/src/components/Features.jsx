@@ -1,4 +1,13 @@
-import { Code2, Database, FileSearch, Network, Plug, Zap } from 'lucide-react'
+import {
+  Code2,
+  Database,
+  FileSearch,
+  Network,
+  Plug,
+  RefreshCw,
+  ShieldCheck,
+  Zap,
+} from 'lucide-react'
 import Reveal from './Reveal'
 
 const features = [
@@ -31,6 +40,16 @@ const features = [
     icon: Plug,
     title: 'MCP Server Built In',
     body: 'Runs as a Model Context Protocol server. Plug into Gemini CLI, Claude Code, Cursor, or any MCP-compatible tool.',
+  },
+  {
+    icon: RefreshCw,
+    title: 'Watch Mode',
+    body: 'Use --watch on large repos you touch daily. Skannr debounces file changes and re-analyzes with a fresh run (cache bypassed per pass) so output stays current.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Opt-in Telemetry',
+    body: 'Anonymous, flag-only usage stats if you enable them. No code, questions, or paths leave your machine. Turn on or off anytime with --telemetry-on / --telemetry-off.',
   },
 ]
 

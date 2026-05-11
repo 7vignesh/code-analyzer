@@ -71,7 +71,7 @@ export default function Hero() {
         className="inline-flex items-center gap-2 border border-white/10 rounded-full px-4 py-1 text-sm text-gray-400 mb-8 opacity-0 motion-safe:animate-fade-in-up motion-reduce:opacity-100 motion-reduce:translate-y-0 [animation-delay:0ms]"
       >
         <span className="w-2 h-2 rounded-full bg-green motion-safe:animate-pulse" />
-        CLI + MCP Server · Open Source
+        CLI + MCP · Watch mode · Open source
       </div>
 
       <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-center leading-tight opacity-0 motion-safe:animate-fade-in-up motion-reduce:opacity-100 motion-reduce:translate-y-0 [animation-delay:80ms]">
@@ -82,7 +82,8 @@ export default function Hero() {
 
       <p className="mt-6 max-w-xl text-center text-lg text-[#888] opacity-0 motion-safe:animate-fade-in-up motion-reduce:opacity-100 motion-reduce:translate-y-0 [animation-delay:180ms]">
         Skannr helps AI assistants understand entire codebases using structural
-        skeletons and hybrid ranking, so you can ask architectural questions without context limits.
+        skeletons and hybrid ranking. Human, Markdown, or JSON output; optional watch mode for
+        live re-analysis; MCP for IDE tools—all without shipping your source off the CLI.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 mt-10 opacity-0 motion-safe:animate-fade-in-up motion-reduce:opacity-100 motion-reduce:translate-y-0 [animation-delay:280ms]">

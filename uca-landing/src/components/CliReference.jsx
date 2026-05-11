@@ -1,16 +1,25 @@
 import Reveal from './Reveal'
 
 const flags = [
-  ['--question', 'The question to answer (required)'],
-  ['--root', 'Path to repo (default: current directory)'],
-  ['--limit', 'Number of files to return (default: 10)'],
-  ['--modules', 'Comma-separated module names to focus on'],
-  ['--lang', 'Force language: typescript, python, auto'],
-  ['--with-mapping', 'Generate symbol-to-file mapping'],
-  ['--skip-cache', 'Bypass cache for this query'],
-  ['--cache-stats', 'Show cache statistics'],
-  ['--cache-clear', 'Clear the cache'],
-  ['--interactive', 'Start interactive agent mode'],
+  ['-V, --version', 'Print the CLI version'],
+  ['-h, --help', 'Show all options and examples'],
+  ['--root <path>', 'Project root (default: current directory)'],
+  ['--question <text>', 'Natural language question about the codebase'],
+  ['--limit <n>', 'Number of top files to return (default: 10 or skannr.config)'],
+  ['--with-mapping', 'Generate symbol mapping for on-demand retrieval'],
+  ['--mapping-output <path>', 'Write mapping JSON here (implies --with-mapping)'],
+  ['--modules <keys>', 'Comma-separated module keys (auto-discovered when omitted)'],
+  ['--lang <mode>', 'typescript | javascript | python | auto (default: auto)'],
+  ['--skip-cache', 'Skip cache and force a full analysis'],
+  ['--cache-clear', 'Clear all cached analysis results'],
+  ['--cache-stats', 'Print cache hit/miss statistics'],
+  ['--report', 'Print repository health report as JSON (no --question)'],
+  ['--diff <ref>', 'Git-scoped analysis (not available yet)'],
+  ['--format <fmt>', 'human | markdown | json (default: human)'],
+  ['--watch', 'Watch the tree and re-run analysis when files change'],
+  ['--telemetry-on', 'Enable anonymous flag-only usage telemetry'],
+  ['--telemetry-off', 'Disable telemetry (stored in ~/.skannr/config.json)'],
+  ['--mcp', 'Run as Model Context Protocol stdio server (same as skannr-mcp)'],
 ]
 
 export default function CliReference() {

@@ -82,7 +82,7 @@ function parseArgs(): AgentCliArgs | null {
     } else if (arg === '--limit' && i + 1 < args.length) {
       limit = parseInt(args[i + 1], 10);
       if (isNaN(limit) || limit < 1) {
-        console.error('Error: --limit must be a positive number');
+        console.error('  ✗ --limit must be a positive number');
         return null;
       }
       i++;
@@ -98,19 +98,23 @@ function parseArgs(): AgentCliArgs | null {
       printHelp();
       return null;
     } else {
-      console.error(`Unknown argument: ${arg}`);
+      console.error(`  ✗ Unknown argument: ${arg}`);
       printHelp();
       return null;
     }
   }
 
   if (!apiKey) {
-    console.error('Error: GEMINI_API_KEY environment variable or --api-key is required\n');
+    console.error('');
+    console.error('  ✗ No Gemini API key. Set GEMINI_API_KEY or pass --api-key <key>.');
+    console.error('');
     return null;
   }
 
   if (!question && !interactive) {
-    console.error('Error: --question is required (or use --interactive for chat mode)\n');
+    console.error('');
+    console.error('  ✗ Provide --question "<text>" or use --interactive for chat mode.');
+    console.error('');
     printHelp();
     return null;
   }
@@ -123,11 +127,11 @@ function parseArgs(): AgentCliArgs | null {
  */
 function printHelp(): void {
   console.log(`
-uca-agent - AI-Powered Code Analysis Agent
+skannr-agent — AI-powered code analysis (Gemini)
 
 Usage:
-  uca-agent --question "<text>" [options]
-  uca-agent --interactive [options]
+  skannr-agent --question "<text>" [options]
+  skannr-agent --interactive [options]
 
 Options:
   --root <path>        Project root directory (default: current directory)
@@ -135,16 +139,18 @@ Options:
   --limit <number>     Number of top files to analyze (default: 10)
   --api-key <key>      Gemini API key (or set GEMINI_API_KEY env var)
   --model <name>       Gemini model name (default: gemini-2.0-flash-exp)
-  --interactive, -i    Start interactive chat mode
+  --interactive, -i  Start interactive chat mode
   --help, -h           Show this help message
 
-Example:
-  uca-agent --question "How does authentication work?"
-  uca-agent --interactive --root ./my-project
-  uca-agent --question "Find all API endpoints" --limit 15
+Examples:
+  skannr-agent --question "How does authentication work?"
+  skannr-agent --interactive --root ./my-project
+  skannr-agent --question "Find all API endpoints" --limit 15
 
-Environment Variables:
+Environment variables:
   GEMINI_API_KEY       Gemini API key (alternative to --api-key)
+
+Docs: https://skannr-ten.vercel.app
   `);
 }
 
@@ -163,7 +169,15 @@ async function runSingleQuestion(args: AgentCliArgs): Promise<void> {
   });
 
   if (result.files.length === 0) {
-    console.log('No files found for analysis.');
+    console.error('');
+    console.error('  ✗ No files found to analyze.');
+    console.error('');
+    console.error('  Possible causes:');
+    console.error('    · --root is wrong or the tree has no matching source files');
+    console.error('    · Files are excluded by config or default excludes');
+    console.error('');
+    console.error('  Try: skannr-agent --question "..." --root .');
+    console.error('');
     return;
   }
 

@@ -4,212 +4,20 @@
  * CLI entry point for skannr
  */
 
-import { analyzeProject, getCacheManager } from './index';
+import { Command, InvalidArgumentError } from 'commander';
+import * as fs from 'fs';
 import * as path from 'path';
+import { analyzeProject, getCacheManager } from './index';
 import { loadConfig } from './config';
-import { discoverModules } from './scanner';
+import { discoverModules, scanFiles } from './scanner';
+import { detectRepoLanguages } from './languages/registry';
 
-interface CliArgs {
-  root: string;
-  question: string;
-  limit: number;
-  limitProvided: boolean;
-  generateMapping: boolean;
-  mappingOutputPath?: string;
-  moduleKeys?: string[];
-  lang: 'typescript' | 'javascript' | 'python' | 'auto';
-  skipCache?: boolean;
-  cacheCommand?: 'clear' | 'stats';
-}
+const VERSION = '0.1.1';
 
-/**
- * Parse command line arguments
- */
-function parseArgs(): CliArgs | null {
-  const args = process.argv.slice(2);
+const VALID_LANGS = ['typescript', 'javascript', 'python', 'auto'] as const;
+type Lang = (typeof VALID_LANGS)[number];
 
-  let root = process.cwd();
-  let question = '';
-  let limit = 10;
-  let limitProvided = false;
-  let generateMapping = false;
-  let mappingOutputPath: string | undefined;
-  let moduleKeys: string[] | undefined;
-  let lang: 'typescript' | 'javascript' | 'python' | 'auto' = 'auto';
-  let skipCache = false;
-  let cacheCommand: 'clear' | 'stats' | undefined;
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
-    if (arg === '--root' && i + 1 < args.length) {
-      root = args[i + 1];
-      i++;
-    } else if (arg === '--question' && i + 1 < args.length) {
-      question = args[i + 1];
-      i++;
-    } else if (arg === '--limit' && i + 1 < args.length) {
-      limit = parseInt(args[i + 1], 10);
-      if (isNaN(limit) || limit < 1) {
-        console.error('Error: --limit must be a positive number');
-        return null;
-      }
-      limitProvided = true;
-      i++;
-    } else if (arg === '--with-mapping') {
-      generateMapping = true;
-    } else if (arg === '--mapping-output' && i + 1 < args.length) {
-      mappingOutputPath = args[i + 1];
-      generateMapping = true; // Implies mapping generation
-      i++;
-    } else if (arg === '--modules' && i + 1 < args.length) {
-      moduleKeys = args[i + 1].split(',').map(k => k.trim());
-      i++;
-    } else if (arg === '--lang' && i + 1 < args.length) {
-      const langArg = args[i + 1].toLowerCase();
-      if (langArg !== 'typescript' && langArg !== 'javascript' && langArg !== 'python' && langArg !== 'auto') {
-        console.error('Error: --lang must be one of: typescript, javascript, python, auto');
-        return null;
-      }
-      lang = langArg as CliArgs['lang'];
-      i++;
-    } else if (arg === '--skip-cache') {
-      skipCache = true;
-    } else if (arg === '--cache-clear') {
-      cacheCommand = 'clear';
-    } else if (arg === '--cache-stats') {
-      cacheCommand = 'stats';
-    } else if (arg === '--help' || arg === '-h') {
-      printHelp();
-      return null;
-    } else {
-      console.error(`Unknown argument: ${arg}`);
-      printHelp();
-      return null;
-    }
-  }
-
-  // Handle cache commands
-  if (cacheCommand) {
-    return { root, question: '', limit, limitProvided, generateMapping, moduleKeys, lang, cacheCommand };
-  }
-
-  if (!question) {
-    console.error('Error: --question is required (or use --cache-* for cache management)\n');
-    printHelp();
-    return null;
-  }
-
-  return { root, question, limit, limitProvided, generateMapping, mappingOutputPath, moduleKeys, lang, skipCache };
-}
-
-/**
- * Print help message
- */
-function printHelp(): void {
-  console.log(`
-uca - Universal Code Analyzer
-
-Usage:
-  uca --question "<text>" [options]
-  uca --cache-clear    # Clear all caches
-  uca --cache-stats    # Show cache statistics
-
-Options:
-  --root <path>            Project root directory (default: current directory)
-  --question "<text>"      Natural language question about the codebase (required)
-  --limit <number>         Number of top files to analyze (default: 10)
-  --with-mapping           Generate symbol mapping for on-demand retrieval
-  --modules <keys>         Comma-separated module keys (auto-discovered when omitted)
-  --lang <mode>            typescript | javascript | python | auto (default: auto)
-  --mapping-output <path>  Custom path for mapping file (implies --with-mapping)
-  --skip-cache             Skip cache and force full analysis
-  --cache-clear            Clear all cached analysis results
-  --cache-stats            Show cache statistics (hits, misses, size)
-  --help, -h               Show this help message
-
-Example:
-  uca --question "authentication logic" --limit 5
-  uca --root ./my-project --question "database models"
-  uca --question "API endpoints" --with-mapping
-  uca --question "permissions" --modules auth,middleware --skip-cache
-  uca --question "class structure" --lang python
-  uca --cache-stats
-  uca --cache-clear
-
-Output:
-  JSON object with ranked files and their code skeletons
-  `);
-}
-
-/**
- * Main CLI function
- */
-async function main(): Promise<void> {
-  const args = parseArgs();
-
-  if (!args) {
-    process.exit(1);
-  }
-
-  try {
-    // Handle cache commands
-    if (args.cacheCommand === 'clear') {
-      const cacheManager = getCacheManager();
-      cacheManager.clear();
-      console.log('✅ Cache cleared successfully');
-      process.exit(0);
-    }
-
-    if (args.cacheCommand === 'stats') {
-      const cacheManager = getCacheManager();
-      const stats = cacheManager.getStats();
-      console.log('\n📊 Cache Statistics:');
-      console.log(`   Hits: ${stats.hits}`);
-      console.log(`   Misses: ${stats.misses}`);
-      console.log(`   Hit Rate: ${stats.hitRate}%`);
-      console.log(`   Cache Size: ${(stats.cacheSize / 1024).toFixed(2)} KB`);
-      console.log(`   Cache Dir: ${cacheManager.getCacheDir()}\n`);
-      process.exit(0);
-    }
-
-    const absoluteRoot = path.resolve(args.root);
-    const config = loadConfig(absoluteRoot);
-    const moduleKeys =
-      args.moduleKeys
-      ?? (config.modules ? Object.keys(config.modules) : discoverModules(absoluteRoot));
-
-    const resolvedLimit = args.limitProvided ? args.limit : (config.defaultLimit ?? args.limit);
-    const langExtensions = resolveExtensionsForLanguage(args.lang);
-    const extensions = langExtensions ?? config.extensions;
-
-    const result = await analyzeProject({
-      root: absoluteRoot,
-      question: args.question,
-      limit: resolvedLimit,
-      generateMapping: args.generateMapping,
-      mappingOutputPath: args.mappingOutputPath,
-      moduleKeys,
-      moduleDefinitions: config.modules,
-      lang: args.lang,
-      skipCache: args.skipCache,
-      exclude: config.exclude,
-      extensions,
-    });
-    console.log(JSON.stringify(result, null, 2));
-  } catch (error) {
-    console.error('Error analyzing project:', error instanceof Error ? error.message : error);
-    process.exit(1);
-  }
-}
-
-// Run CLI
-main().catch((error) => {
-  console.error('Unexpected error:', error);
-  process.exit(1);
-});
-
-function resolveExtensionsForLanguage(lang: CliArgs['lang']): string[] | undefined {
+function resolveExtensionsForLanguage(lang: Lang): string[] | undefined {
   switch (lang) {
     case 'typescript':
     case 'javascript':
@@ -221,3 +29,254 @@ function resolveExtensionsForLanguage(lang: CliArgs['lang']): string[] | undefin
       return undefined;
   }
 }
+
+function printNoFilesError(): void {
+  console.error(
+    [
+      '',
+      '  ✗ No files found to analyze.',
+      '',
+      '  Possible causes:',
+      '    · --root points to an empty or non-existent directory',
+      '    · All files are excluded by .gitignore or default excludes',
+      '    · --lang filter is too restrictive for this repo',
+      '',
+      '  Try: skannr --question "..." --root /path/to/repo',
+      '       skannr --question "..." --root . --lang auto',
+      '',
+    ].join('\n'),
+  );
+}
+
+function assertRootExists(absoluteRoot: string): void {
+  if (!fs.existsSync(absoluteRoot)) {
+    console.error('');
+    console.error(`  ✗ Directory does not exist: ${absoluteRoot}`);
+    console.error('');
+    console.error('  Check --root points to a valid project path.');
+    console.error('');
+    process.exit(1);
+  }
+  if (!fs.statSync(absoluteRoot).isDirectory()) {
+    console.error('');
+    console.error(`  ✗ Not a directory: ${absoluteRoot}`);
+    console.error('');
+    process.exit(1);
+  }
+}
+
+function runReport(root: string, lang: Lang): void {
+  const absoluteRoot = path.resolve(root);
+  assertRootExists(absoluteRoot);
+  const config = loadConfig(absoluteRoot);
+  const moduleKeys =
+    config.modules ? Object.keys(config.modules) : discoverModules(absoluteRoot);
+  const extensions = resolveExtensionsForLanguage(lang) ?? config.extensions;
+  const files = scanFiles(absoluteRoot, {
+    extensions,
+    exclude: config.exclude,
+    moduleKeys,
+    moduleDefinitions: config.modules,
+  });
+  const languages = detectRepoLanguages(absoluteRoot);
+  const report = {
+    type: 'report' as const,
+    version: VERSION,
+    root: absoluteRoot,
+    scannedFileCount: files.length,
+    moduleKeys,
+    languages,
+    extensions: extensions ?? 'auto (from repo)',
+  };
+  console.log(JSON.stringify(report, null, 2));
+}
+
+const program = new Command();
+
+program
+  .name('skannr')
+  .description(
+    [
+      'Analyze any codebase. Ask questions. Get ranked, compressed file skeletons.',
+      'Powered by hybrid retrieval: lexical + structural + dependency-graph.',
+      '',
+      'Docs: https://skannr-ten.vercel.app',
+    ].join('\n'),
+  )
+  .version(VERSION)
+  .option('--root <path>', 'project root directory', process.cwd())
+  .option('--question <text>', 'natural language question about the codebase')
+  .option(
+    '--limit <number>',
+    'number of top files to analyze',
+    (value: string) => {
+      const n = parseInt(value, 10);
+      if (Number.isNaN(n) || n < 1) {
+        throw new InvalidArgumentError('must be a positive number');
+      }
+      return n;
+    },
+  )
+  .option('--with-mapping', 'generate symbol mapping for on-demand retrieval')
+  .option('--mapping-output <path>', 'custom path for mapping file (implies --with-mapping)')
+  .option('--modules <keys>', 'comma-separated module keys (auto-discovered when omitted)')
+  .option(
+    '--lang <mode>',
+    'language filter: typescript | javascript | python | auto (default: auto)',
+  )
+  .option('--skip-cache', 'skip cache and force full analysis')
+  .option('--cache-clear', 'clear all cached analysis results')
+  .option('--cache-stats', 'show cache statistics')
+  .option('--report', 'print repository health report (JSON) instead of running a question')
+  .option('--diff <ref>', 'limit analysis to files changed vs git ref (not available yet)');
+
+program.addHelpText(
+  'after',
+  `
+Examples:
+  skannr --question "how does auth work?" --root .
+  skannr --question "database setup" --root /path/to/repo --limit 5
+  skannr --question "class structure" --root . --lang python
+  skannr --question "changed files" --root . --diff HEAD~1
+  skannr --report --root .                     # health report
+  skannr-agent --root .                         # interactive mode
+
+Monorepo tip:
+  skannr --question "..." --root packages/my-package
+
+MCP config (Cursor / Claude Code):
+  { "mcpServers": { "skannr": { "command": "npx", "args": ["skannr"] } } }
+`,
+);
+
+program.parse(process.argv);
+
+const opts = program.opts<{
+  root: string;
+  question?: string;
+  limit?: number;
+  withMapping?: boolean;
+  mappingOutput?: string;
+  modules?: string;
+  lang?: string;
+  skipCache?: boolean;
+  cacheClear?: boolean;
+  cacheStats?: boolean;
+  report?: boolean;
+  diff?: string;
+}>();
+
+function resolveLangFlag(raw: string | undefined): Lang {
+  const value = (raw ?? 'auto').toLowerCase();
+  if (!VALID_LANGS.includes(value as Lang)) {
+    const display = raw === undefined || raw === '' ? '(empty)' : raw;
+    console.error('');
+    console.error(
+      `  ✗ Invalid --lang "${display}". Valid values: ${VALID_LANGS.join(', ')}`,
+    );
+    console.error('');
+    process.exit(1);
+  }
+  return value as Lang;
+}
+
+void (async () => {
+  try {
+    if (opts.cacheClear) {
+      const cacheManager = getCacheManager();
+      cacheManager.clear();
+      console.log('✅ Cache cleared successfully');
+      process.exit(0);
+    }
+
+    if (opts.cacheStats) {
+      const cacheManager = getCacheManager();
+      const stats = cacheManager.getStats();
+      console.log('\n📊 Cache Statistics:');
+      console.log(`   Hits: ${stats.hits}`);
+      console.log(`   Misses: ${stats.misses}`);
+      console.log(`   Hit Rate: ${stats.hitRate}%`);
+      console.log(`   Cache Size: ${(stats.cacheSize / 1024).toFixed(2)} KB`);
+      console.log(`   Cache Dir: ${cacheManager.getCacheDir()}\n`);
+      process.exit(0);
+    }
+
+    const lang = resolveLangFlag(opts.lang);
+
+    if (opts.report) {
+      runReport(opts.root, lang);
+      process.exit(0);
+    }
+
+    if (opts.diff !== undefined) {
+      console.error('');
+      console.error('  ✗ --diff is not available in this release.');
+      console.error('    Remove --diff or watch the changelog for git-scoped analysis.');
+      console.error('');
+      process.exit(1);
+    }
+
+    const question = opts.question?.trim() ?? '';
+    if (!question) {
+      console.error('');
+      console.error('  ✗ Missing --question.');
+      console.error('');
+      console.error('  Example: skannr --question "how does auth work?" --root .');
+      console.error('  Cache only: skannr --cache-stats | skannr --cache-clear');
+      console.error('  Report:    skannr --report --root .');
+      console.error('');
+      program.outputHelp();
+      process.exit(1);
+    }
+
+    const absoluteRoot = path.resolve(opts.root);
+    assertRootExists(absoluteRoot);
+
+    const config = loadConfig(absoluteRoot);
+    const moduleKeysFromCli = opts.modules
+      ? opts.modules.split(',').map((k) => k.trim()).filter(Boolean)
+      : undefined;
+    const moduleKeys =
+      moduleKeysFromCli && moduleKeysFromCli.length > 0
+        ? moduleKeysFromCli
+        : config.modules
+          ? Object.keys(config.modules)
+          : discoverModules(absoluteRoot);
+
+    const limitProvided = opts.limit !== undefined;
+    const limit = limitProvided ? opts.limit! : (config.defaultLimit ?? 10);
+
+    const generateMapping = Boolean(opts.withMapping || opts.mappingOutput);
+    const mappingOutputPath = opts.mappingOutput;
+
+    const langExtensions = resolveExtensionsForLanguage(lang);
+    const extensions = langExtensions ?? config.extensions;
+
+    const result = await analyzeProject({
+      root: absoluteRoot,
+      question,
+      limit,
+      generateMapping,
+      mappingOutputPath,
+      moduleKeys,
+      moduleDefinitions: config.modules,
+      lang,
+      skipCache: opts.skipCache,
+      exclude: config.exclude,
+      extensions,
+    });
+
+    if (result.files.length === 0) {
+      printNoFilesError();
+      process.exit(1);
+    }
+
+    console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    console.error(
+      'Error analyzing project:',
+      error instanceof Error ? error.message : error,
+    );
+    process.exit(1);
+  }
+})();

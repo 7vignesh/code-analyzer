@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { LanguageAdapter, Symbol } from './LanguageAdapter';
+import { LanguageAdapter, SkeletonResult, Symbol } from './LanguageAdapter';
 
 export class PythonAdapter implements LanguageAdapter {
   name = 'python';
@@ -9,7 +9,7 @@ export class PythonAdapter implements LanguageAdapter {
     return this.extensions.includes(path.extname(filePath).toLowerCase());
   }
 
-  generateSkeleton(content: string): string {
+  generateSkeleton(content: string, _filePath: string, _rootDir?: string): SkeletonResult {
     const lines = content.split('\n');
     const output: string[] = [];
     const keepers = /^(?:\s*(?:@[\w.]+(?:\([^)]*\))?|(?:async\s+)?def\s+[\w_]+\s*\(.*\)\s*(?:->\s*[^:]+)?\s*:|class\s+[\w_]+(?:\([^)]*\))?\s*:|(?:from\s+\S+\s+import\s+.+)|(?:import\s+.+)|[A-Za-z_]\w*\s*=.+))/;
@@ -29,7 +29,7 @@ export class PythonAdapter implements LanguageAdapter {
       output.push(line);
     }
 
-    return output.join('\n').trim();
+    return { skeleton: output.join('\n').trim() };
   }
 
   extractSymbols(content: string): Symbol[] {

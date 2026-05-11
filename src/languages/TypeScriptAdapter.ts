@@ -1,6 +1,7 @@
 import { Project, SourceFile } from 'ts-morph';
 import * as path from 'path';
-import { LanguageAdapter, Symbol } from './LanguageAdapter';
+import type { SymbolLineRange } from '../types';
+import { LanguageAdapter, SkeletonResult, Symbol } from './LanguageAdapter';
 
 export class TypeScriptAdapter implements LanguageAdapter {
   name = 'typescript';
@@ -11,12 +12,22 @@ export class TypeScriptAdapter implements LanguageAdapter {
     return this.extensions.includes(ext);
   }
 
-  generateSkeleton(content: string, filePath: string): string {
+  generateSkeleton(content: string, filePath: string, rootDir?: string): SkeletonResult {
     try {
       const sourceFile = this.createSourceFile(content, filePath);
-      return this.generateSkeletonFromSourceFile(sourceFile);
+      const lineRanges: SymbolLineRange[] = [];
+      const skeleton = this.generateSkeletonFromSourceFile(
+        sourceFile,
+        filePath,
+        rootDir,
+        lineRanges,
+      );
+      return { skeleton, lineRanges };
     } catch (error) {
-      return `/* Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'} */`;
+      return {
+        skeleton: `/* Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'} */`,
+        lineRanges: [],
+      };
     }
   }
 
@@ -100,7 +111,41 @@ export class TypeScriptAdapter implements LanguageAdapter {
     return project.createSourceFile(filePath, content, { overwrite: true });
   }
 
-  private generateSkeletonFromSourceFile(sourceFile: SourceFile): string {
+  private relPathForComment(filePath: string, rootDir: string | undefined): string {
+    if (rootDir) {
+      const rel = path.relative(rootDir, path.resolve(filePath)).split(path.sep).join('/');
+      return rel || path.basename(filePath);
+    }
+    return path.basename(filePath);
+  }
+
+  private annotatedLine(
+    filePath: string,
+    rootDir: string | undefined,
+    start: number,
+    end: number,
+    indentSpaces: number,
+  ): string {
+    const rel = this.relPathForComment(filePath, rootDir);
+    const span = start === end ? `${rel}:${start}` : `${rel}:${start}-${end}`;
+    return `${' '.repeat(indentSpaces)}// ${span}`;
+  }
+
+  private recordRange(
+    lineRanges: SymbolLineRange[],
+    symbol: string,
+    start: number,
+    end: number,
+  ): void {
+    lineRanges.push({ symbol, start, end });
+  }
+
+  private generateSkeletonFromSourceFile(
+    sourceFile: SourceFile,
+    filePath: string,
+    rootDir: string | undefined,
+    lineRanges: SymbolLineRange[],
+  ): string {
     const lines: string[] = [];
     lines.push(`/* Skeleton of ${path.basename(sourceFile.getFilePath())} */\n`);
 
@@ -118,37 +163,52 @@ export class TypeScriptAdapter implements LanguageAdapter {
 
     const classes = sourceFile.getClasses();
     for (const cls of classes) {
-      lines.push(this.processClass(cls));
+      lines.push(this.processClass(cls, filePath, rootDir, lineRanges));
       lines.push('');
     }
 
     const interfaces = sourceFile.getInterfaces();
     for (const iface of interfaces) {
+      const nm = iface.getName();
+      const s = iface.getStartLineNumber();
+      const e = iface.getEndLineNumber();
+      this.recordRange(lineRanges, `interface ${nm}`, s, e);
+      lines.push(this.annotatedLine(filePath, rootDir, s, e, 0));
       lines.push(iface.getText());
       lines.push('');
     }
 
     const typeAliases = sourceFile.getTypeAliases();
     for (const typeAlias of typeAliases) {
+      const nm = typeAlias.getName();
+      const s = typeAlias.getStartLineNumber();
+      const e = typeAlias.getEndLineNumber();
+      this.recordRange(lineRanges, `type ${nm}`, s, e);
+      lines.push(this.annotatedLine(filePath, rootDir, s, e, 0));
       lines.push(typeAlias.getText());
       lines.push('');
     }
 
     const enums = sourceFile.getEnums();
     for (const enumDecl of enums) {
+      const nm = enumDecl.getName();
+      const s = enumDecl.getStartLineNumber();
+      const e = enumDecl.getEndLineNumber();
+      this.recordRange(lineRanges, `enum ${nm}`, s, e);
+      lines.push(this.annotatedLine(filePath, rootDir, s, e, 0));
       lines.push(enumDecl.getText());
       lines.push('');
     }
 
     const functions = sourceFile.getFunctions();
     for (const func of functions) {
-      lines.push(this.processFunction(func));
+      lines.push(this.processFunction(func, filePath, rootDir, lineRanges));
       lines.push('');
     }
 
     const variables = sourceFile.getVariableStatements();
     for (const varStatement of variables) {
-      lines.push(this.processVariableStatement(varStatement));
+      lines.push(this.processVariableStatement(varStatement, filePath, rootDir, lineRanges));
       lines.push('');
     }
 
@@ -163,12 +223,28 @@ export class TypeScriptAdapter implements LanguageAdapter {
     return lines.join('\n').trim();
   }
 
-  private processClass(cls: any): string {
+  private processClass(
+    cls: any,
+    filePath: string,
+    rootDir: string | undefined,
+    lineRanges: SymbolLineRange[],
+  ): string {
     const lines: string[] = [];
+    const className = cls.getName() || 'Anonymous';
+    const classStart = cls.getStartLineNumber();
+    const classEnd = cls.getEndLineNumber();
+    this.recordRange(lineRanges, `class ${className}`, classStart, classEnd);
+
+    const jsDoc = cls.getJsDocs();
+    if (jsDoc.length > 0) {
+      lines.push(jsDoc[0].getText());
+    }
+
+    lines.push(this.annotatedLine(filePath, rootDir, classStart, classEnd, 0));
 
     const modifiers = cls.getModifiers().map((m: any) => m.getText()).join(' ');
     let classDecl = modifiers ? `${modifiers} class` : 'class';
-    classDecl += ` ${cls.getName() || 'Anonymous'}`;
+    classDecl += ` ${className}`;
 
     const typeParams = cls.getTypeParameters();
     if (typeParams.length > 0) {
@@ -188,11 +264,6 @@ export class TypeScriptAdapter implements LanguageAdapter {
     classDecl += ' {';
     lines.push(classDecl);
 
-    const jsDoc = cls.getJsDocs();
-    if (jsDoc.length > 0) {
-      lines.splice(0, 0, jsDoc[0].getText());
-    }
-
     const properties = cls.getProperties();
     for (const prop of properties) {
       const propModifiers = prop.getModifiers().map((m: any) => m.getText()).join(' ');
@@ -210,27 +281,39 @@ export class TypeScriptAdapter implements LanguageAdapter {
 
     const methods = cls.getMethods();
     for (const method of methods) {
-      lines.push(this.processMethod(method));
+      lines.push(this.processMethod(method, filePath, rootDir, lineRanges, className));
     }
 
     const constructors = cls.getConstructors();
     for (const ctor of constructors) {
-      lines.push(this.processConstructor(ctor));
+      lines.push(this.processConstructor(ctor, filePath, rootDir, lineRanges, className));
     }
 
     lines.push('}');
     return lines.join('\n');
   }
 
-  private processMethod(method: any): string {
+  private processMethod(
+    method: any,
+    filePath: string,
+    rootDir: string | undefined,
+    lineRanges: SymbolLineRange[],
+    className: string,
+  ): string {
     const lines: string[] = [];
+    const name = method.getName();
+    const ms = method.getStartLineNumber();
+    const me = method.getEndLineNumber();
+    this.recordRange(lineRanges, `${className}.${name}`, ms, me);
+
     const jsDoc = method.getJsDocs();
     if (jsDoc.length > 0) {
       lines.push('  ' + jsDoc[0].getText().split('\n').join('\n  '));
     }
 
+    lines.push(this.annotatedLine(filePath, rootDir, ms, me, 2));
+
     const modifiers = method.getModifiers().map((m: any) => m.getText()).join(' ');
-    const name = method.getName();
     const params = method.getParameters().map((p: any) => {
       const pName = p.getName();
       const pType = p.getType().getText();
@@ -250,21 +333,32 @@ export class TypeScriptAdapter implements LanguageAdapter {
     return lines.join('\n');
   }
 
-  private processConstructor(ctor: any): string {
+  private processConstructor(
+    ctor: any,
+    filePath: string,
+    rootDir: string | undefined,
+    lineRanges: SymbolLineRange[],
+    className: string,
+  ): string {
     const lines: string[] = [];
+    const cs = ctor.getStartLineNumber();
+    const ce = ctor.getEndLineNumber();
+    this.recordRange(lineRanges, `${className}.constructor`, cs, ce);
 
     const jsDoc = ctor.getJsDocs();
     if (jsDoc.length > 0) {
       lines.push('  ' + jsDoc[0].getText().split('\n').join('\n  '));
     }
 
+    lines.push(this.annotatedLine(filePath, rootDir, cs, ce, 2));
+
     const params = ctor.getParameters().map((p: any) => {
-      const modifiers = p.getModifiers().map((m: any) => m.getText()).join(' ');
+      const pModifiers = p.getModifiers().map((m: any) => m.getText()).join(' ');
       const pName = p.getName();
       const pType = p.getType().getText();
       const optional = p.isOptional() ? '?' : '';
       const paramStr = `${pName}${optional}: ${pType}`;
-      return modifiers ? `${modifiers} ${paramStr}` : paramStr;
+      return pModifiers ? `${pModifiers} ${paramStr}` : paramStr;
     }).join(', ');
 
     lines.push(`  constructor(${params}) {`);
@@ -274,15 +368,26 @@ export class TypeScriptAdapter implements LanguageAdapter {
     return lines.join('\n');
   }
 
-  private processFunction(func: any): string {
+  private processFunction(
+    func: any,
+    filePath: string,
+    rootDir: string | undefined,
+    lineRanges: SymbolLineRange[],
+  ): string {
     const lines: string[] = [];
+    const name = func.getName() || 'anonymous';
+    const fs = func.getStartLineNumber();
+    const fe = func.getEndLineNumber();
+    this.recordRange(lineRanges, `function ${name}`, fs, fe);
+
     const jsDoc = func.getJsDocs();
     if (jsDoc.length > 0) {
       lines.push(jsDoc[0].getText());
     }
 
+    lines.push(this.annotatedLine(filePath, rootDir, fs, fe, 0));
+
     const modifiers = func.getModifiers().map((m: any) => m.getText()).join(' ');
-    const name = func.getName();
     const params = func.getParameters().map((p: any) => {
       const pName = p.getName();
       const pType = p.getType().getText();
@@ -301,7 +406,12 @@ export class TypeScriptAdapter implements LanguageAdapter {
     return lines.join('\n');
   }
 
-  private processVariableStatement(varStatement: any): string {
+  private processVariableStatement(
+    varStatement: any,
+    filePath: string,
+    rootDir: string | undefined,
+    lineRanges: SymbolLineRange[],
+  ): string {
     const lines: string[] = [];
     const jsDoc = varStatement.getJsDocs();
     if (jsDoc.length > 0) {
@@ -314,6 +424,11 @@ export class TypeScriptAdapter implements LanguageAdapter {
 
     for (const decl of declarations) {
       const name = decl.getName();
+      const ds = decl.getStartLineNumber();
+      const de = decl.getEndLineNumber();
+      this.recordRange(lineRanges, `${declarationKind} ${name}`, ds, de);
+      lines.push(this.annotatedLine(filePath, rootDir, ds, de, 0));
+
       const type = decl.getType().getText();
       const initializer = decl.getInitializer();
 

@@ -30,6 +30,13 @@ export interface AnalyzeOptions {
   lang?: 'typescript' | 'javascript' | 'python' | 'auto';
 }
 
+/** Source span for a symbol (TypeScript/JavaScript skeleton grounding). */
+export interface SymbolLineRange {
+  symbol: string;
+  start: number;
+  end: number;
+}
+
 /**
  * Ranked file with relevance score
  */
@@ -40,6 +47,8 @@ export interface RankedFile {
   score: number;
   /** Short human-readable explanation of why this file ranked */
   why: string;
+  /** Optional line ranges when skeleton metadata is attached later in the pipeline */
+  lineRanges?: SymbolLineRange[];
 }
 
 /**
@@ -54,6 +63,8 @@ export interface FileAnalysis {
   why: string;
   /** Generated skeleton code */
   skeleton: string;
+  /** Per-symbol line ranges in the original file (TS/JS when available) */
+  lineRanges?: SymbolLineRange[];
   /** Approximate token count of original file */
   originalTokenCount: number;
   /** Approximate token count of skeleton */

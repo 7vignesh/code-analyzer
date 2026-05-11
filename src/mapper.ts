@@ -6,6 +6,7 @@
 import { Project, SourceFile, SyntaxKind } from 'ts-morph';
 import * as path from 'path';
 import * as fs from 'fs';
+import type { SymbolLineRange } from './types';
 
 export interface SymbolLocation {
   symbolId: string;
@@ -37,7 +38,7 @@ export interface SymbolMapping {
 export function buildSkeletonWithMapping(
   filePath: string,
   rootPath: string
-): { skeleton: string; symbols: SymbolLocation[] } {
+): { skeleton: string; symbols: SymbolLocation[]; lineRanges: SymbolLineRange[] } {
   const symbols: SymbolLocation[] = [];
   
   try {
@@ -51,12 +52,18 @@ export function buildSkeletonWithMapping(
 
     const sourceFile = project.addSourceFileAtPath(filePath);
     const skeleton = generateSkeletonWithMapping(sourceFile, filePath, symbols, rootPath);
+    const lineRanges: SymbolLineRange[] = symbols.map((s) => ({
+      symbol: s.symbolId,
+      start: s.startLine,
+      end: s.endLine,
+    }));
     
-    return { skeleton, symbols };
+    return { skeleton, symbols, lineRanges };
   } catch (error) {
     return {
       skeleton: `/* Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'} */`,
       symbols: [],
+      lineRanges: [],
     };
   }
 }

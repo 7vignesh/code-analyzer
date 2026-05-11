@@ -62,7 +62,7 @@ export class CacheManager {
     enhancedRanking?: boolean,
     limit?: number
   ): string {
-    const input = `${root}|${question}|${(moduleKeys || []).join(',')}|${enhancedRanking}|${limit}|why-v1`;
+    const input = `${root}|${question}|${(moduleKeys || []).join(',')}|${enhancedRanking}|${limit}|why-v1|lr-v1`;
     return crypto.createHash('md5').update(input).digest('hex');
   }
 

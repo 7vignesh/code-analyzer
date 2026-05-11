@@ -17,6 +17,7 @@ import {
   AnalyzeOptions,
   AnalysisResult,
   FileAnalysis,
+  type SymbolLineRange,
 } from './types';
 import { getCacheManager, type CacheConfig } from './cache';
 import { detectRepoLanguages, getAdapter } from './languages/registry';
@@ -109,9 +110,11 @@ export async function analyzeProject(
     const adapter = getAdapter(rankedFile.path);
 
     let skeleton: string;
+    let lineRanges: SymbolLineRange[] | undefined;
     if (generateMapping && adapter.name === 'typescript') {
       const mappingResult = buildSkeletonWithMapping(rankedFile.path, absoluteRoot);
       skeleton = mappingResult.skeleton;
+      lineRanges = mappingResult.lineRanges;
       if (mappingResult.symbols.length > 0) {
         symbolMapping.files[relativePath] = {
           originalPath: rankedFile.path,
@@ -119,7 +122,9 @@ export async function analyzeProject(
         };
       }
     } else {
-      skeleton = buildSkeletonForFile(rankedFile.path);
+      const sk = buildSkeletonForFile(rankedFile.path, absoluteRoot);
+      skeleton = sk.skeleton;
+      lineRanges = sk.lineRanges;
     }
 
     fileAnalyses.push({
@@ -127,6 +132,7 @@ export async function analyzeProject(
       score: rankedFile.score,
       why: rankedFile.why,
       skeleton,
+      lineRanges,
       originalTokenCount: countTokens(originalContent),
       skeletonTokenCount: countTokens(skeleton),
     });
@@ -204,6 +210,7 @@ export type {
   AnalysisResult,
   FileAnalysis,
   RankedFile,
+  SymbolLineRange,
 } from './types';
 
 export {

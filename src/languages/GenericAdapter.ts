@@ -1,4 +1,4 @@
-import { LanguageAdapter, Symbol } from './LanguageAdapter';
+import { LanguageAdapter, SkeletonResult, Symbol } from './LanguageAdapter';
 
 export class GenericAdapter implements LanguageAdapter {
   name = 'generic';
@@ -8,8 +8,8 @@ export class GenericAdapter implements LanguageAdapter {
     return true;
   }
 
-  generateSkeleton(content: string): string {
-    return content.split('\n').slice(0, 50).join('\n');
+  generateSkeleton(content: string, _filePath: string, _rootDir?: string): SkeletonResult {
+    return { skeleton: content.split('\n').slice(0, 50).join('\n') };
   }
 
   extractSymbols(content: string): Symbol[] {

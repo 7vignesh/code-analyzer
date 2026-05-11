@@ -17,6 +17,11 @@ import {
 import { loadConfig } from './config';
 import { discoverModules, scanFiles } from './scanner';
 import { detectRepoLanguages } from './languages/registry';
+import {
+  askTelemetryConsent,
+  setTelemetryExplicit,
+  track,
+} from './telemetry';
 
 const VERSION = '0.1.1';
 
@@ -140,6 +145,9 @@ program
     'output format: human, markdown, or json',
     'human',
   )
+  .option('--watch', 'watch for file changes and re-analyze automatically')
+  .option('--telemetry-on', 'enable anonymous usage telemetry (flags only)')
+  .option('--telemetry-off', 'disable anonymous usage telemetry')
   .option('--mcp', 'run as Model Context Protocol stdio server (same as skannr-mcp)');
 
 program.addHelpText(
@@ -153,6 +161,7 @@ Examples:
   skannr --report --root .                     # health report
   skannr --question "..." --root . --format markdown
   skannr --question "..." --root . --format json
+  skannr --question "..." --root . --watch      # re-run on file changes
   skannr-agent --root .                         # interactive mode
 
 Monorepo tip:
@@ -179,8 +188,30 @@ const opts = program.opts<{
   report?: boolean;
   diff?: string;
   format?: string;
+  watch?: boolean;
+  telemetryOn?: boolean;
+  telemetryOff?: boolean;
   mcp?: boolean;
 }>();
+
+function buildAnalyzeTelemetryFlags(
+  o: typeof opts,
+  outputFormat: 'human' | 'markdown' | 'json',
+  lang: Lang,
+  limit: number,
+): Record<string, boolean | string | number> {
+  return {
+    hasModules: Boolean(o.modules),
+    hasDiff: o.diff !== undefined,
+    hasWatch: Boolean(o.watch),
+    hasReport: Boolean(o.report),
+    hasMapping: Boolean(o.withMapping || o.mappingOutput),
+    skipCache: Boolean(o.skipCache),
+    format: outputFormat,
+    lang,
+    limit,
+  };
+}
 
 function resolveLangFlag(raw: string | undefined): Lang {
   const value = (raw ?? 'auto').toLowerCase();
@@ -196,12 +227,38 @@ function resolveLangFlag(raw: string | undefined): Lang {
   return value as Lang;
 }
 
+function resolveFormatFlag(raw: string | undefined): 'human' | 'markdown' | 'json' {
+  const fmt = (raw ?? 'human').toLowerCase();
+  if (fmt === 'json' || fmt === 'markdown' || fmt === 'human') {
+    return fmt;
+  }
+  const display = raw === undefined || raw === '' ? '(empty)' : raw;
+  console.error('');
+  console.error(
+    `  ✗ Invalid --format "${display}". Use human, markdown, or json.`,
+  );
+  console.error('');
+  process.exit(1);
+}
+
 void (async () => {
   try {
     if (opts.mcp || process.argv.includes('--mcp')) {
       const { startMcpServer } = await import('./mcp-server');
       await startMcpServer();
       return;
+    }
+
+    if (opts.telemetryOn) {
+      setTelemetryExplicit(true);
+      console.log('Telemetry enabled. Thank you!');
+      process.exit(0);
+    }
+
+    if (opts.telemetryOff) {
+      setTelemetryExplicit(false);
+      console.log('Telemetry disabled.');
+      process.exit(0);
     }
 
     if (opts.cacheClear) {
@@ -254,6 +311,8 @@ void (async () => {
     const absoluteRoot = path.resolve(opts.root);
     assertRootExists(absoluteRoot);
 
+    await askTelemetryConsent();
+
     const config = loadConfig(absoluteRoot);
     const moduleKeysFromCli = opts.modules
       ? opts.modules.split(',').map((k) => k.trim()).filter(Boolean)
@@ -274,8 +333,9 @@ void (async () => {
     const langExtensions = resolveExtensionsForLanguage(lang);
     const extensions = langExtensions ?? config.extensions;
 
-    const started = Date.now();
-    const rawResult = await analyzeProject({
+    const outputFormat = resolveFormatFlag(opts.format);
+
+    const analyzeOptions = {
       root: absoluteRoot,
       question,
       limit,
@@ -284,9 +344,45 @@ void (async () => {
       moduleKeys,
       moduleDefinitions: config.modules,
       lang,
-      skipCache: opts.skipCache,
       exclude: config.exclude,
       extensions,
+    };
+
+    if (opts.watch) {
+      const { watchAndAnalyze } = await import('./watcher');
+      let watchTelemetrySent = false;
+      try {
+        await watchAndAnalyze(analyzeOptions, (raw, elapsedMs) => {
+          const result = withCliMetrics(raw, elapsedMs);
+          const formatted =
+            outputFormat === 'json'
+              ? formatJson(result)
+              : outputFormat === 'markdown'
+                ? formatMarkdown(result)
+                : formatHuman(result);
+          process.stdout.write(formatted + (formatted.endsWith('\n') ? '' : '\n'));
+          if (!watchTelemetrySent) {
+            watchTelemetrySent = true;
+            track(
+              'analyze',
+              buildAnalyzeTelemetryFlags(opts, outputFormat, lang, limit),
+            );
+          }
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'NO_FILES') {
+          printNoFilesError();
+          process.exit(1);
+        }
+        throw error;
+      }
+      return;
+    }
+
+    const started = Date.now();
+    const rawResult = await analyzeProject({
+      ...analyzeOptions,
+      skipCache: opts.skipCache,
     });
 
     if (rawResult.files.length === 0) {
@@ -296,25 +392,19 @@ void (async () => {
 
     const result = withCliMetrics(rawResult, Date.now() - started);
 
-    const fmt = (opts.format ?? 'human').toLowerCase();
     const formatted =
-      fmt === 'json'
+      outputFormat === 'json'
         ? formatJson(result)
-        : fmt === 'markdown'
+        : outputFormat === 'markdown'
           ? formatMarkdown(result)
-          : fmt === 'human'
-            ? formatHuman(result)
-            : null;
-    if (formatted === null) {
-      console.error('');
-      console.error(
-        `  ✗ Invalid --format "${opts.format ?? ''}". Use human, markdown, or json.`,
-      );
-      console.error('');
-      process.exit(1);
-    }
+          : formatHuman(result);
 
     process.stdout.write(formatted + (formatted.endsWith('\n') ? '' : '\n'));
+
+    track(
+      'analyze',
+      buildAnalyzeTelemetryFlags(opts, outputFormat, lang, limit),
+    );
   } catch (error) {
     console.error(
       'Error analyzing project:',

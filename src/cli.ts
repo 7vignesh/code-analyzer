@@ -8,7 +8,12 @@ import { Command, InvalidArgumentError } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 import { analyzeProject, getCacheManager } from './index';
-import type { AnalysisResult } from './types';
+import {
+  formatHuman,
+  formatJson,
+  formatMarkdown,
+  withCliMetrics,
+} from './formatter';
 import { loadConfig } from './config';
 import { discoverModules, scanFiles } from './scanner';
 import { detectRepoLanguages } from './languages/registry';
@@ -63,17 +68,6 @@ function assertRootExists(absoluteRoot: string): void {
     console.error(`  ✗ Not a directory: ${absoluteRoot}`);
     console.error('');
     process.exit(1);
-  }
-}
-
-function printHumanResult(result: AnalysisResult): void {
-  const dim = '\x1b[90m';
-  const reset = '\x1b[0m';
-  for (const f of result.files) {
-    console.log(`${f.path}  [score: ${f.score.toFixed(3)}]`);
-    console.log(`${dim}  ↳ ${f.why}${reset}\n`);
-    console.log(f.skeleton);
-    console.log(`\n${'='.repeat(64)}\n`);
   }
 }
 
@@ -142,9 +136,9 @@ program
   .option('--report', 'print repository health report (JSON) instead of running a question')
   .option('--diff <ref>', 'limit analysis to files changed vs git ref (not available yet)')
   .option(
-    '--format <mode>',
-    'output format: json (default) or human (paths, scores, why, then skeletons)',
-    'json',
+    '--format <format>',
+    'output format: human, markdown, or json',
+    'human',
   )
   .option('--mcp', 'run as Model Context Protocol stdio server (same as skannr-mcp)');
 
@@ -157,7 +151,8 @@ Examples:
   skannr --question "class structure" --root . --lang python
   skannr --question "changed files" --root . --diff HEAD~1
   skannr --report --root .                     # health report
-  skannr --question "..." --root . --format human   # paths, scores, why, skeletons
+  skannr --question "..." --root . --format markdown
+  skannr --question "..." --root . --format json
   skannr-agent --root .                         # interactive mode
 
 Monorepo tip:
@@ -279,7 +274,8 @@ void (async () => {
     const langExtensions = resolveExtensionsForLanguage(lang);
     const extensions = langExtensions ?? config.extensions;
 
-    const result = await analyzeProject({
+    const started = Date.now();
+    const rawResult = await analyzeProject({
       root: absoluteRoot,
       question,
       limit,
@@ -293,22 +289,32 @@ void (async () => {
       extensions,
     });
 
-    if (result.files.length === 0) {
+    if (rawResult.files.length === 0) {
       printNoFilesError();
       process.exit(1);
     }
 
-    const fmt = (opts.format ?? 'json').toLowerCase();
-    if (fmt === 'human') {
-      printHumanResult(result);
-    } else if (fmt === 'json') {
-      console.log(JSON.stringify(result, null, 2));
-    } else {
+    const result = withCliMetrics(rawResult, Date.now() - started);
+
+    const fmt = (opts.format ?? 'human').toLowerCase();
+    const formatted =
+      fmt === 'json'
+        ? formatJson(result)
+        : fmt === 'markdown'
+          ? formatMarkdown(result)
+          : fmt === 'human'
+            ? formatHuman(result)
+            : null;
+    if (formatted === null) {
       console.error('');
-      console.error(`  ✗ Invalid --format "${opts.format ?? ''}". Use json or human.`);
+      console.error(
+        `  ✗ Invalid --format "${opts.format ?? ''}". Use human, markdown, or json.`,
+      );
       console.error('');
       process.exit(1);
     }
+
+    process.stdout.write(formatted + (formatted.endsWith('\n') ? '' : '\n'));
   } catch (error) {
     console.error(
       'Error analyzing project:',

@@ -43,7 +43,11 @@ skannr-agent --root /path/to/repo
 skannr --cache-stats
 skannr --cache-clear
 skannr --question "..." --skip-cache
+
+# Output: human (default), markdown, or json
+skannr --question "..." --root . --format json
 ```
+
 
 ## MCP Server
 

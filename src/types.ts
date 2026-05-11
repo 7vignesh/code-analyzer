@@ -72,4 +72,10 @@ export interface AnalysisResult {
   limit: number;
   /** Analyzed files with skeletons */
   files: FileAnalysis[];
+  /** Approximate aggregate token reduction (percent); often set by CLI for display */
+  tokenReduction?: number;
+  /** Wall-clock time for the analysis run (ms); often set by CLI */
+  executionMs?: number;
+  /** Optional retrieval/debug line for formatters */
+  evidence?: string;
 }

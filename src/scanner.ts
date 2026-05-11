@@ -2,6 +2,7 @@
  * File scanner for universal codebases.
  */
 
+import ignore from 'ignore';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -22,23 +23,43 @@ export const DEFAULT_EXCLUDES = [
   '**/.cache/**',
 ];
 
-const DEFAULT_IGNORED_DIRS = new Set([
-  'node_modules',
-  '.git',
-  'dist',
-  'build',
-  'coverage',
-  '__pycache__',
-  'vendor',
-  '.next',
-  '.nuxt',
-  'target',
-  '.cache',
-  '.idea',
-  '.vscode',
-]);
-
 const SRC_CANDIDATES = ['src', 'lib', 'packages', 'apps', 'modules'];
+
+function loadGitignore(root: string): ReturnType<typeof ignore> {
+  const ig = ignore();
+
+  // Always-ignore defaults (even without .gitignore)
+  ig.add([
+    'node_modules',
+    'dist',
+    'build',
+    'coverage',
+    '.next',
+    '.nuxt',
+    '.cache',
+    '__pycache__',
+    'vendor',
+    'target',
+    '*.min.js',
+    '*.bundle.js',
+    '*.pyc',
+    '*.pyo',
+    '.git',
+  ]);
+
+  const gitignorePath = path.join(root, '.gitignore');
+  if (fs.existsSync(gitignorePath)) {
+    const content = fs.readFileSync(gitignorePath, 'utf-8');
+    ig.add(content);
+  }
+
+  return ig;
+}
+
+function repoRelativePath(rootDir: string, absolutePath: string): string {
+  const rel = path.relative(rootDir, absolutePath).split(path.sep).join('/');
+  return rel === '' ? '.' : rel;
+}
 
 export interface ScanOptions {
   extensions?: string[];
@@ -75,6 +96,7 @@ export function scanFiles(rootDir: string, options: ScanOptions = {}): string[] 
   const excludes = options.exclude ?? DEFAULT_EXCLUDES;
   const extensions = options.extensions?.map((ext) => ext.toLowerCase());
   const scanRoots = resolveScanRoots(rootDir, options);
+  const ig = loadGitignore(rootDir);
 
   const scan = (dir: string): void => {
     let entries: fs.Dirent[];
@@ -86,14 +108,17 @@ export function scanFiles(rootDir: string, options: ScanOptions = {}): string[] 
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
+      const relPath = repoRelativePath(rootDir, fullPath);
+      if (!relPath.startsWith('..') && ig.ignores(relPath)) {
+        continue;
+      }
+
       if (shouldExclude(fullPath, rootDir, excludes)) {
         continue;
       }
 
       if (entry.isDirectory()) {
-        if (!DEFAULT_IGNORED_DIRS.has(entry.name)) {
-          scan(fullPath);
-        }
+        scan(fullPath);
       } else if (entry.isFile()) {
         if (!extensions || extensions.length === 0) {
           results.push(fullPath);

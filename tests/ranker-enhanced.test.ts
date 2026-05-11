@@ -51,6 +51,8 @@ describe('rankFilesEnhanced hybrid retrieval', () => {
 
     expect(ranked.length).toBe(2);
     expect(path.basename(ranked[0].path)).toBe('auth-permissions.ts');
+    expect(ranked[0].why.length).toBeGreaterThan(0);
+    expect(ranked[1].why.length).toBeGreaterThan(0);
   });
 
   it('returns deterministic ordering for equal scores', () => {

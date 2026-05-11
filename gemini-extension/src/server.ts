@@ -52,7 +52,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     modules?: string[];
   };
 
-  const result = await analyzeProject({ question, root, limit, moduleKeys: modules });
+  const result = await analyzeProject({
+    question,
+    root,
+    limit,
+    moduleKeys: modules,
+    enhancedRanking: true,
+  });
 
   return {
     content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],

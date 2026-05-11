@@ -62,6 +62,10 @@ describe('rankFiles', () => {
     // This is a placeholder to show the structure
     const ranked = rankFiles(files, 'test', 2);
     expect(ranked.length).toBeLessThanOrEqual(2);
+    ranked.forEach((r) => {
+      expect(typeof r.why).toBe('string');
+      expect(r.why.length).toBeGreaterThan(0);
+    });
   });
 
   it('should sort by score descending', () => {

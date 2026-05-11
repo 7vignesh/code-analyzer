@@ -125,6 +125,7 @@ export async function analyzeProject(
     fileAnalyses.push({
       path: relativePath,
       score: rankedFile.score,
+      why: rankedFile.why,
       skeleton,
       originalTokenCount: countTokens(originalContent),
       skeletonTokenCount: countTokens(skeleton),

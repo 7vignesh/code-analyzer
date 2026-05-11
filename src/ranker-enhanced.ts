@@ -6,6 +6,7 @@ import * as path from 'path';
 import { readFileContent } from './scanner';
 import { RankedFile } from './types';
 import { getAdapter } from './languages/registry';
+import { buildWhyString } from './why';
 
 export interface EnhancedRankedFile extends RankedFile {
   reasons: string[];
@@ -34,6 +35,12 @@ interface PreRankRecord {
   metadata: FileMetadata | null;
   content: string;
   baseScore: number;
+  lexicalScore: number;
+  structuralScore: number;
+  keywordsMatched: string[];
+  moduleMatch: boolean;
+  directImportByPeer: boolean;
+  normalizedDepScore: number;
 }
 
 function splitIdentifierTokens(input: string): string[] {
@@ -385,6 +392,30 @@ export function rankFilesEnhanced(
       structuralScore * 0.2
     );
 
+    const relForModule = path.relative(resolvedRoot, filePath).toLowerCase();
+    const pathParts = relForModule.split(/[/\\]/);
+    const keywordsMatched = expandedTerms.filter(
+      (term) =>
+        filePath.toLowerCase().includes(term) || content.toLowerCase().includes(term),
+    );
+    const seenKw = new Set<string>();
+    const uniqueKeywords: string[] = [];
+    for (const k of keywordsMatched) {
+      if (!seenKw.has(k)) {
+        seenKw.add(k);
+        uniqueKeywords.push(k);
+      }
+    }
+
+    const moduleMatch = expandedTerms.some((term) =>
+      pathParts.some(
+        (segment) =>
+          segment === term ||
+          segment.startsWith(`${term}.`) ||
+          segment.includes(term),
+      ),
+    );
+
     records.push({
       file: {
         path: filePath,
@@ -392,10 +423,17 @@ export function rankFilesEnhanced(
         reasons,
         symbolCount: metadata?.symbolCount,
         dependencies: metadata?.imports,
+        why: '',
       },
       metadata,
       content,
       baseScore,
+      lexicalScore,
+      structuralScore,
+      keywordsMatched: uniqueKeywords,
+      moduleMatch,
+      directImportByPeer: false,
+      normalizedDepScore: 0,
     });
   }
 
@@ -410,6 +448,7 @@ export function rankFilesEnhanced(
   for (const record of records) {
     const relativePath = path.relative(resolvedRoot, record.file.path);
     let dependencyBoost = 0;
+    let directImportByPeer = false;
 
     for (const otherRecord of records) {
       if (otherRecord.file.path === record.file.path) continue;
@@ -417,9 +456,11 @@ export function rankFilesEnhanced(
       const otherDeps = dependencyMap.get(otherRelPath) || [];
       if (otherDeps.some(dep => dep.includes(path.parse(relativePath).name))) {
         dependencyBoost += Math.max(otherRecord.baseScore, 0) * 0.15;
+        directImportByPeer = true;
       }
     }
 
+    record.directImportByPeer = directImportByPeer;
     dependencyScores.push(dependencyBoost);
   }
 
@@ -430,6 +471,7 @@ export function rankFilesEnhanced(
   records.forEach((record, index) => {
     const combined = normalizedBaseScores[index] * 0.85 + normalizedDependencyScores[index] * 0.15;
     record.file.score = combined;
+    record.normalizedDepScore = normalizedDependencyScores[index];
 
     if (normalizedDependencyScores[index] > 0.2) {
       record.file.reasons.push(`Dependency centrality boost: ${(normalizedDependencyScores[index] * 100).toFixed(0)}%`);
@@ -456,5 +498,17 @@ export function rankFilesEnhanced(
     return a.file.path.localeCompare(b.file.path);
   });
 
-  return records.slice(0, limit).map(record => record.file);
+  const top = records.slice(0, limit);
+  for (const record of top) {
+    record.file.why = buildWhyString({
+      lexicalScore: record.lexicalScore,
+      structuralScore: record.structuralScore,
+      depScore: record.normalizedDepScore,
+      keywordsMatched: record.keywordsMatched,
+      isDirectImport: record.directImportByPeer,
+      moduleMatch: record.moduleMatch,
+    });
+  }
+
+  return top.map((record) => record.file);
 }

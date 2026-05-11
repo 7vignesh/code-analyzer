@@ -38,6 +38,8 @@ export interface RankedFile {
   path: string;
   /** Relevance score (0-1) */
   score: number;
+  /** Short human-readable explanation of why this file ranked */
+  why: string;
 }
 
 /**
@@ -48,6 +50,8 @@ export interface FileAnalysis {
   path: string;
   /** Relevance score (0-1) */
   score: number;
+  /** Short human-readable explanation of why this file ranked */
+  why: string;
   /** Generated skeleton code */
   skeleton: string;
   /** Approximate token count of original file */

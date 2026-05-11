@@ -5,6 +5,12 @@
 import * as path from 'path';
 import { readFileContent } from './scanner';
 import { RankedFile } from './types';
+import {
+  buildWhyString,
+  collectKeywordMatches,
+  pathModuleMatchesQuery,
+  questionTerms,
+} from './why';
 
 /**
  * Simple keyword-based relevance scoring
@@ -69,13 +75,25 @@ export function rankFiles(
 ): RankedFile[] {
   const rankedFiles: RankedFile[] = [];
 
+  const terms = questionTerms(question);
+
   for (const filePath of filePaths) {
     const content = readFileContent(filePath);
     const score = calculateRelevanceScore(filePath, content, question);
+    const keywordsMatched = collectKeywordMatches(filePath, content, terms);
+    const moduleMatch = pathModuleMatchesQuery(filePath, terms);
 
     rankedFiles.push({
       path: filePath,
       score,
+      why: buildWhyString({
+        lexicalScore: score,
+        structuralScore: 0,
+        depScore: 0,
+        keywordsMatched,
+        isDirectImport: false,
+        moduleMatch,
+      }),
     });
   }
 

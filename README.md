@@ -45,20 +45,58 @@ skannr --cache-clear
 skannr --question "..." --skip-cache
 ```
 
-### MCP Server (use with Gemini CLI, Claude Code, Cursor, etc.)
+## MCP Server
+
+`skannr` ships with a built-in MCP server. One-time setup per AI tool:
+
+### Cursor
+
+`~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "skannr": {
       "command": "npx",
-      "args": ["skannr"]
+      "args": ["-y", "skannr", "--mcp"]
     }
   }
 }
 ```
 
-### Config File (optional)
+### Claude Desktop / Claude Code
+
+`~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "skannr": {
+      "command": "npx",
+      "args": ["-y", "skannr", "--mcp"]
+    }
+  }
+}
+```
+
+### Gemini CLI
+
+`~/.gemini/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "skannr": {
+      "command": "npx",
+      "args": ["-y", "skannr", "--mcp"]
+    }
+  }
+}
+```
+
+Alternatively run the dedicated binary: `skannr-mcp` (same stdio server).
+
+## Config File (optional)
 
 Drop a `code-analyzer.config.json` in your repo root:
 

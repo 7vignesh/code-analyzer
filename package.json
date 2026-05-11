@@ -7,7 +7,8 @@
   "bin": {
     "skannr": "dist/cli.js",
     "skannr-benchmark": "dist/benchmark.js",
-    "skannr-agent": "dist/agent-cli.js"
+    "skannr-agent": "dist/agent-cli.js",
+    "skannr-mcp": "dist/mcp-cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -28,6 +29,7 @@
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^12.1.0",
     "ignore": "^7.0.5",
     "ts-morph": "^21.0.1"

@@ -145,7 +145,8 @@ program
     '--format <mode>',
     'output format: json (default) or human (paths, scores, why, then skeletons)',
     'json',
-  );
+  )
+  .option('--mcp', 'run as Model Context Protocol stdio server (same as skannr-mcp)');
 
 program.addHelpText(
   'after',
@@ -162,8 +163,8 @@ Examples:
 Monorepo tip:
   skannr --question "..." --root packages/my-package
 
-MCP config (Cursor / Claude Code):
-  { "mcpServers": { "skannr": { "command": "npx", "args": ["skannr"] } } }
+MCP (stdio): npx -y skannr --mcp   (or: skannr-mcp)
+  Cursor: { "mcpServers": { "skannr": { "command": "npx", "args": ["-y", "skannr", "--mcp"] } } }
 `,
 );
 
@@ -183,6 +184,7 @@ const opts = program.opts<{
   report?: boolean;
   diff?: string;
   format?: string;
+  mcp?: boolean;
 }>();
 
 function resolveLangFlag(raw: string | undefined): Lang {
@@ -201,6 +203,12 @@ function resolveLangFlag(raw: string | undefined): Lang {
 
 void (async () => {
   try {
+    if (opts.mcp || process.argv.includes('--mcp')) {
+      const { startMcpServer } = await import('./mcp-server');
+      await startMcpServer();
+      return;
+    }
+
     if (opts.cacheClear) {
       const cacheManager = getCacheManager();
       cacheManager.clear();

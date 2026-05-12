@@ -45,9 +45,32 @@ skannr --cache-clear
 skannr --question "..." --skip-cache
 
 # Output: human (default), markdown, or json
+skannr --question "..." --root . --format markdown
 skannr --question "..." --root . --format json
+
+# Repository health report (JSON on stdout)
+skannr --report --root .
+
+# Re-run analysis when files change (debounced; uses fresh analysis each pass)
+skannr --question "..." --root . --watch
 ```
 
+### Watch mode (`--watch`)
+
+Use `--watch` when you want Skannr to stay running and **re-analyze after relevant file changes** (large repos you edit often). Changes under common build/vendor dirs are ignored (`node_modules`, `.git`, `dist`, etc.). Press **Ctrl+C** to stop.
+
+Each run bypasses the analysis cache so results reflect the tree as it is now.
+
+### Anonymous telemetry (opt-in)
+
+Telemetry is **off unless you enable it** (or accept deferred opt-in — see below). It sends **only which CLI flags were used** — never your question text, file paths, or code.
+
+- Enable: `skannr --telemetry-on`
+- Disable: `skannr --telemetry-off`
+
+Settings are stored under `~/.skannr/config.json`. The first time you run an analyze command with no config yet, Skannr may show a short notice; you can opt in or out anytime with the flags above.
+
+If you take no action, telemetry may turn on automatically **after 7 days** from that notice unless you explicitly disabled it with `--telemetry-off`.
 
 ## MCP Server
 

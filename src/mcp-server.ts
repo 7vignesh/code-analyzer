@@ -61,41 +61,89 @@ export async function startMcpServer(): Promise<void> {
           required: ['question', 'root'],
         },
       },
+      {
+        name: 'blast_radius',
+        description:
+          'Analyze downstream impact and risk of a git diff. Returns affected files, risk score, and test coverage gaps.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            root: {
+              type: 'string',
+              description: 'Absolute path to the repo root',
+            },
+            diff: {
+              type: 'string',
+              description: 'Unified diff content (if omitted, uses working tree vs HEAD)',
+            },
+            hops: {
+              type: 'number',
+              description: 'Max traversal hops for downstream impact (default: 2)',
+            },
+          },
+          required: ['root'],
+        },
+      },
     ],
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    if (request.params.name !== 'scan_codebase') {
-      throw new Error(`Unknown tool: ${request.params.name}`);
+    const toolName = request.params.name;
+    const args = request.params.arguments as Record<string, unknown>;
+
+    if (toolName === 'scan_codebase') {
+      const question = String(args.question ?? '');
+      const root = String(args.root ?? '');
+      const limit =
+        typeof args.limit === 'number' && !Number.isNaN(args.limit) && args.limit > 0
+          ? args.limit
+          : 8;
+      const moduleKeys = normalizeModuleKeys(args.modules);
+      const langRaw = args.lang != null ? String(args.lang).toLowerCase() : 'auto';
+      const lang = (['typescript', 'javascript', 'python', 'auto'] as const).includes(
+        langRaw as 'typescript' | 'javascript' | 'python' | 'auto',
+      )
+        ? (langRaw as 'typescript' | 'javascript' | 'python' | 'auto')
+        : 'auto';
+
+      const result = await analyzeProject({
+        question,
+        root,
+        limit,
+        moduleKeys,
+        lang,
+        enhancedRanking: true,
+      });
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
     }
 
-    const args = request.params.arguments as Record<string, unknown>;
-    const question = String(args.question ?? '');
-    const root = String(args.root ?? '');
-    const limit =
-      typeof args.limit === 'number' && !Number.isNaN(args.limit) && args.limit > 0
-        ? args.limit
-        : 8;
-    const moduleKeys = normalizeModuleKeys(args.modules);
-    const langRaw = args.lang != null ? String(args.lang).toLowerCase() : 'auto';
-    const lang = (['typescript', 'javascript', 'python', 'auto'] as const).includes(
-      langRaw as 'typescript' | 'javascript' | 'python' | 'auto',
-    )
-      ? (langRaw as 'typescript' | 'javascript' | 'python' | 'auto')
-      : 'auto';
+    if (toolName === 'blast_radius') {
+      const { computeBlastRadius } = await import('./blast-radius');
+      const root = String(args.root ?? '');
+      const hops =
+        typeof args.hops === 'number' && !Number.isNaN(args.hops) && args.hops > 0
+          ? args.hops
+          : 2;
+      const diffContent =
+        typeof args.diff === 'string' && args.diff.length > 0
+          ? args.diff
+          : undefined;
 
-    const result = await analyzeProject({
-      question,
-      root,
-      limit,
-      moduleKeys,
-      lang,
-      enhancedRanking: true,
-    });
+      const result = computeBlastRadius({
+        root,
+        diffContent,
+        hops,
+      });
 
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-    };
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    }
+
+    throw new Error(`Unknown tool: ${toolName}`);
   });
 
   const transport = new StdioServerTransport();

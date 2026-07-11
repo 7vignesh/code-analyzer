@@ -172,3 +172,89 @@ Benchmarked on large TypeScript monorepo:
 /stats             Show mapping statistics
 /exit              Quit
 ```
+
+## Blast Radius
+
+Analyze the downstream impact and risk of a code change. Given a git diff,
+blast-radius identifies which files are affected, how central they are in the
+dependency graph, and whether they have test coverage.
+
+**Limitation (v1):** Traversal is computed at file granularity — "file A
+imports file B" — not at function-call level. Function-level resolution is
+planned for a future version.
+
+### CLI
+
+```bash
+# Analyze working tree changes vs HEAD (default)
+skannr blast-radius --root .
+
+# Analyze a specific diff file, 3 hops deep
+skannr blast-radius --root . --diff changes.patch --hops 3
+
+# JSON output for CI pipelines
+skannr blast-radius --root . --json
+```
+
+Sample terminal output:
+
+```
+  Blast Radius Analysis (2-hop traversal)
+  ──────────────────────────────────────────────────
+
+  Risk Score: 5.8/10
+  Risk 5.8/10 (moderate): 1 file(s) changed, 4 downstream affected, 3 untested.
+
+  Changed files:
+    src/auth/session.ts
+
+  Changed symbols:
+    function validateToken (src/auth/session.ts)
+
+  Hop 1 (2 files):
+    src/middleware/auth-guard.ts  centrality=0.85 [NO TEST]
+    src/api/login.ts              centrality=0.60
+
+  Hop 2 (2 files):
+    src/routes/index.ts           centrality=0.45 [NO TEST]
+    src/api/admin.ts              centrality=0.30 [NO TEST]
+
+  Formula inputs:
+    affected_count (normalized): 0.080
+    avg_centrality:              0.550
+    untested_ratio:              0.750
+    hop_spread (normalized):     1.000
+```
+
+### MCP
+
+The `blast_radius` tool is exposed via the same MCP server (`skannr --mcp`).
+
+Input schema:
+
+```json
+{
+  "root": "/path/to/repo",
+  "diff": "<optional unified diff content>",
+  "hops": 2
+}
+```
+
+If `diff` is omitted, the tool runs `git diff HEAD` in the given root.
+The output is the same JSON structure as `skannr blast-radius --json`.
+
+### Risk Score Formula
+
+```
+risk = 2.5 × normalizedAffectedCount
+     + 2.5 × avgCentrality
+     + 3.5 × untestedRatio
+     + 1.5 × normalizedMaxHopSpread
+```
+
+| Input | Range | Meaning |
+|-------|-------|---------|
+| normalizedAffectedCount | 0–1 | Affected files / total project files |
+| avgCentrality | 0–1 | Mean in-degree centrality of affected files |
+| untestedRatio | 0–1 | Fraction of affected files with no test file |
+| normalizedMaxHopSpread | 0–1 | Deepest hop reached / max configured hops |

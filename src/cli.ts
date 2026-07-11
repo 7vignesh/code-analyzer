@@ -150,6 +150,50 @@ program
   .option('--telemetry-off', 'disable anonymous usage telemetry')
   .option('--mcp', 'run as Model Context Protocol stdio server (same as skannr-mcp)');
 
+// ---------------------------------------------------------------------------
+// Subcommand: blast-radius
+// ---------------------------------------------------------------------------
+program
+  .command('blast-radius')
+  .description('Analyze downstream impact and risk of a git diff')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .option('--diff <path>', 'path to a diff file (default: working tree vs HEAD)')
+  .option('--hops <n>', 'max traversal hops (default: 2)', (v: string) => {
+    const n = parseInt(v, 10);
+    if (Number.isNaN(n) || n < 1) {
+      throw new InvalidArgumentError('must be a positive integer');
+    }
+    return n;
+  })
+  .option('--json', 'output as JSON instead of plain text')
+  .action(async (cmdOpts: { root: string; diff?: string; hops?: number; json?: boolean }) => {
+    try {
+      const { computeBlastRadius, formatBlastRadiusText, formatBlastRadiusJson } =
+        await import('./blast-radius');
+
+      const absoluteRoot = path.resolve(cmdOpts.root);
+      assertRootExists(absoluteRoot);
+
+      const result = computeBlastRadius({
+        root: absoluteRoot,
+        diffPath: cmdOpts.diff,
+        hops: cmdOpts.hops ?? 2,
+      });
+
+      const output = cmdOpts.json
+        ? formatBlastRadiusJson(result)
+        : formatBlastRadiusText(result);
+
+      process.stdout.write(output + (output.endsWith('\n') ? '' : '\n'));
+    } catch (error) {
+      console.error(
+        'Error computing blast radius:',
+        error instanceof Error ? error.message : error,
+      );
+      process.exit(1);
+    }
+  });
+
 program.addHelpText(
   'after',
   `
@@ -163,6 +207,8 @@ Examples:
   skannr --question "..." --root . --format json
   skannr --question "..." --root . --watch      # re-run on file changes
   skannr-agent --root .                         # interactive mode
+  skannr blast-radius --root . --hops 3         # blast radius analysis
+  skannr blast-radius --diff changes.patch --json
 
 Monorepo tip:
   skannr --question "..." --root packages/my-package

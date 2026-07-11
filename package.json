@@ -1,6 +1,6 @@
 {
   "name": "skannr",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "A universal tool to analyze any codebase and generate semantic skeletons for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,6 +33,7 @@
     "chokidar": "^4.0.3",
     "commander": "^12.1.0",
     "ignore": "^7.0.5",
+    "parse-diff": "0.12.0",
     "tree-sitter": "^0.25.0",
     "tree-sitter-python": "^0.25.0",
     "ts-morph": "^21.0.1"

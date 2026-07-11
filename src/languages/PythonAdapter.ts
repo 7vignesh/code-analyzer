@@ -1,20 +1,34 @@
 import * as path from 'path';
-import Parser = require('tree-sitter');
 import { LanguageAdapter, SkeletonResult, Symbol } from './LanguageAdapter';
 
-type SyntaxNode = Parser.SyntaxNode;
+let Parser: any;
+let pythonLanguage: any;
+let treeSitterAvailable = true;
 
-let pythonLanguage: Parser.Language | undefined;
-
-function ensureParserLoaded(): void {
-  if (!pythonLanguage) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    pythonLanguage = require('tree-sitter-python') as Parser.Language;
-  }
+try {
+  Parser = require('tree-sitter');
+} catch {
+  treeSitterAvailable = false;
 }
 
-function getParser(): Parser {
-  ensureParserLoaded();
+type SyntaxNode = any;
+
+function ensureParserLoaded(): boolean {
+  if (!treeSitterAvailable) return false;
+  if (!pythonLanguage) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      pythonLanguage = require('tree-sitter-python');
+    } catch {
+      treeSitterAvailable = false;
+      return false;
+    }
+  }
+  return true;
+}
+
+function getParser(): any | null {
+  if (!ensureParserLoaded()) return null;
   const parser = new Parser();
   parser.setLanguage(pythonLanguage!);
   return parser;
@@ -144,6 +158,7 @@ function processStatement(state: SkeletonState, node: SyntaxNode): void {
 
 function buildSkeletonAst(content: string): string {
   const parser = getParser();
+  if (!parser) return content.split('\n').slice(0, 50).join('\n');
   const tree = parser.parse(content);
   const lines = content.split(/\r?\n/);
   const state: SkeletonState = {
@@ -262,6 +277,7 @@ export class PythonAdapter implements LanguageAdapter {
   extractSymbols(content: string): Symbol[] {
     try {
       const parser = getParser();
+      if (!parser) return [];
       const tree = parser.parse(content);
       const symbols: Symbol[] = [];
       walkSymbols(tree.rootNode, symbols);
@@ -274,6 +290,7 @@ export class PythonAdapter implements LanguageAdapter {
   extractImports(content: string): string[] {
     try {
       const parser = getParser();
+      if (!parser) return [];
       const tree = parser.parse(content);
       const mods = new Set<string>();
       walkImports(tree.rootNode, mods);

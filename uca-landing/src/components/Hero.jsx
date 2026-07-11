@@ -30,7 +30,7 @@ export default function Hero() {
 
   const lines = useMemo(
     () => [
-      '$ skannr --question "how does authentication work?" --root ./my-project',
+      '$ skannr "how does authentication work?"',
       '',
       '✓ Detected language: TypeScript',
       '✓ Discovered modules: auth, api, middleware, db',

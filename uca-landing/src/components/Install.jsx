@@ -6,29 +6,29 @@ const tabs = ['CLI Install', 'npx', 'MCP Server']
 const snippets = {
   'CLI Install': `npm install -g skannr
 
-# Ask a question about any repo
-skannr --question "how does auth work?" --root /path/to/repo
+# Ask about any codebase
+skannr "how does auth work?"
 
-# Markdown or JSON for agents / CI
-skannr --question "where is billing?" --root . --format markdown
-skannr --question "API surface" --root . --format json
+# Limit results, JSON output
+skannr "database queries" -n 5 --json
 
-# Re-run when files change (large repos, daily workflow)
-skannr --question "how does routing work?" --root . --watch
+# Check risk before pushing
+skannr risk
+skannr risk --diff feature.patch --json
 
-# Telemetry is opt-in (or deferred); disable anytime
-skannr --telemetry-off
-
-# Interactive agent mode (separate binary)
-skannr-agent --root /path/to/repo`,
+# Interactive agent mode
+skannr agent`,
   npx: `# Run without installing
-npx skannr --question "how does this work?" --root .
+npx skannr "how does this work?"
 
-# Health report (JSON to stdout)
-npx skannr --report --root .
+# Risk check (no install needed)
+npx skannr risk
 
-# One-time cache check
-npx skannr --cache-stats`,
+# Health report
+npx skannr report
+
+# Cache management
+npx skannr cache stats`,
   'MCP Server': `{
   "mcpServers": {
     "skannr": {

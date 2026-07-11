@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Code2,
   Database,
   FileSearch,
@@ -20,6 +21,11 @@ const features = [
     icon: Zap,
     title: '96.5% Token Reduction',
     body: 'Skeleton generation strips bodies while preserving signatures and types. Feed entire codebases to your AI without hitting limits.',
+  },
+  {
+    icon: AlertTriangle,
+    title: 'Risk Analysis',
+    body: 'Run "skannr risk" before pushing. Traverses the dependency graph, finds downstream affected files, flags untested code, and scores risk 0-10. Deterministic and instant.',
   },
   {
     icon: Code2,

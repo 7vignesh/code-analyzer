@@ -3,7 +3,7 @@ import Reveal from './Reveal'
 const steps = [
   {
     title: 'Point it at any repo',
-    code: 'skannr --question "..." --root /path/to/any/project',
+    code: 'skannr "how does auth work?"',
     desc: "No configuration needed. Works on repos you've never touched before. Auto-detects language and module structure from the folder layout.",
   },
   {
@@ -17,6 +17,11 @@ const steps = [
   {
     title: 'Skeletons compress without losing meaning',
     desc: 'Function bodies stripped. Signatures, types, interfaces, and imports remain. The AI gets the full architectural picture at 3% of the token cost. Citations tell you exactly which files were used.',
+  },
+  {
+    title: 'Check risk before you push',
+    code: 'skannr risk',
+    desc: 'Analyzes your uncommitted changes, traverses the dependency graph to find downstream affected files, flags untested code, and gives you a 0-10 risk score. Deterministic, instant, no API call.',
   },
 ]
 

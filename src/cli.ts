@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * CLI entry point for skannr
+ * CLI entry point for skannr.
+ *
+ * Simplified command surface:
+ *   skannr "how does auth work?"        → ask a question (positional)
+ *   skannr risk                         → impact of working tree changes
+ *   skannr risk --json                  → JSON output for CI
+ *   skannr report                       → repo health report
+ *   skannr agent                        → interactive agent mode
+ *   skannr cache stats | clear          → cache management
+ *
+ * All legacy flags (--question, --root, blast-radius, etc.) remain supported.
  */
 
 import { Command, InvalidArgumentError } from 'commander';
@@ -23,7 +33,7 @@ import {
   track,
 } from './telemetry';
 
-const VERSION = '0.1.1';
+const VERSION = '0.1.4';
 
 const VALID_LANGS = ['typescript', 'javascript', 'python', 'auto'] as const;
 type Lang = (typeof VALID_LANGS)[number];
@@ -52,8 +62,8 @@ function printNoFilesError(): void {
       '    · All files are excluded by .gitignore or default excludes',
       '    · --lang filter is too restrictive for this repo',
       '',
-      '  Try: skannr --question "..." --root /path/to/repo',
-      '       skannr --question "..." --root . --lang auto',
+      '  Try: skannr "your question" --root /path/to/repo',
+      '       skannr "your question" --lang auto',
       '',
     ].join('\n'),
   );
@@ -74,6 +84,35 @@ function assertRootExists(absoluteRoot: string): void {
     console.error('');
     process.exit(1);
   }
+}
+
+function resolveLangFlag(raw: string | undefined): Lang {
+  const value = (raw ?? 'auto').toLowerCase();
+  if (!VALID_LANGS.includes(value as Lang)) {
+    const display = raw === undefined || raw === '' ? '(empty)' : raw;
+    console.error('');
+    console.error(
+      `  ✗ Invalid --lang "${display}". Valid values: ${VALID_LANGS.join(', ')}`,
+    );
+    console.error('');
+    process.exit(1);
+  }
+  return value as Lang;
+}
+
+function resolveFormatFlag(raw: string | undefined, jsonShortcut?: boolean): 'human' | 'markdown' | 'json' {
+  if (jsonShortcut) return 'json';
+  const fmt = (raw ?? 'human').toLowerCase();
+  if (fmt === 'json' || fmt === 'markdown' || fmt === 'human') {
+    return fmt;
+  }
+  const display = raw === undefined || raw === '' ? '(empty)' : raw;
+  console.error('');
+  console.error(
+    `  ✗ Invalid --format "${display}". Use human, markdown, or json.`,
+  );
+  console.error('');
+  process.exit(1);
 }
 
 function runReport(root: string, lang: Lang): void {
@@ -102,6 +141,10 @@ function runReport(root: string, lang: Lang): void {
   console.log(JSON.stringify(report, null, 2));
 }
 
+// ---------------------------------------------------------------------------
+// Build CLI
+// ---------------------------------------------------------------------------
+
 const program = new Command();
 
 program
@@ -109,17 +152,22 @@ program
   .description(
     [
       'Analyze any codebase. Ask questions. Get ranked, compressed file skeletons.',
-      'Powered by hybrid retrieval: lexical + structural + dependency-graph.',
       '',
-      'Docs: https://skannr-ten.vercel.app',
+      'Usage:',
+      '  skannr "how does auth work?"       Ask about the codebase',
+      '  skannr risk                         Check impact of current changes',
+      '  skannr report                       Repo health summary',
+      '  skannr agent                        Interactive exploration',
     ].join('\n'),
   )
   .version(VERSION)
+  .enablePositionalOptions()
+  .argument('[question]', 'natural language question about the codebase')
   .option('--root <path>', 'project root directory', process.cwd())
-  .option('--question <text>', 'natural language question about the codebase')
+  .option('--question <text>', 'question (alternative to positional argument)')
   .option(
-    '--limit <number>',
-    'number of top files to analyze',
+    '-n, --limit <number>',
+    'number of top files to return',
     (value: string) => {
       const n = parseInt(value, 10);
       if (Number.isNaN(n) || n < 1) {
@@ -138,220 +186,95 @@ program
   .option('--skip-cache', 'skip cache and force full analysis')
   .option('--cache-clear', 'clear all cached analysis results')
   .option('--cache-stats', 'show cache statistics')
-  .option('--report', 'print repository health report (JSON) instead of running a question')
-  .option('--diff <ref>', 'limit analysis to files changed vs git ref (not available yet)')
+  .option('--report', 'print repository health report (JSON)')
   .option(
     '--format <format>',
     'output format: human, markdown, or json',
     'human',
   )
+  .option('--json', 'shortcut for --format json')
   .option('--watch', 'watch for file changes and re-analyze automatically')
   .option('--telemetry-on', 'enable anonymous usage telemetry (flags only)')
   .option('--telemetry-off', 'disable anonymous usage telemetry')
-  .option('--mcp', 'run as Model Context Protocol stdio server (same as skannr-mcp)');
+  .option('--mcp', 'run as Model Context Protocol stdio server');
 
 // ---------------------------------------------------------------------------
-// Subcommand: blast-radius
+// Root command action (question flow)
 // ---------------------------------------------------------------------------
-program
-  .command('blast-radius')
-  .description('Analyze downstream impact and risk of a git diff')
-  .option('--root <path>', 'project root directory', process.cwd())
-  .option('--diff <path>', 'path to a diff file (default: working tree vs HEAD)')
-  .option('--hops <n>', 'max traversal hops (default: 2)', (v: string) => {
-    const n = parseInt(v, 10);
-    if (Number.isNaN(n) || n < 1) {
-      throw new InvalidArgumentError('must be a positive integer');
-    }
-    return n;
-  })
-  .option('--json', 'output as JSON instead of plain text')
-  .action(async (cmdOpts: { root: string; diff?: string; hops?: number; json?: boolean }) => {
-    try {
-      const { computeBlastRadius, formatBlastRadiusText, formatBlastRadiusJson } =
-        await import('./blast-radius');
-
-      const absoluteRoot = path.resolve(cmdOpts.root);
-      assertRootExists(absoluteRoot);
-
-      const result = computeBlastRadius({
-        root: absoluteRoot,
-        diffPath: cmdOpts.diff,
-        hops: cmdOpts.hops ?? 2,
-      });
-
-      const output = cmdOpts.json
-        ? formatBlastRadiusJson(result)
-        : formatBlastRadiusText(result);
-
-      process.stdout.write(output + (output.endsWith('\n') ? '' : '\n'));
-    } catch (error) {
-      console.error(
-        'Error computing blast radius:',
-        error instanceof Error ? error.message : error,
-      );
-      process.exit(1);
-    }
-  });
-
-program.addHelpText(
-  'after',
-  `
-Examples:
-  skannr --question "how does auth work?" --root .
-  skannr --question "database setup" --root /path/to/repo --limit 5
-  skannr --question "class structure" --root . --lang python
-  skannr --question "changed files" --root . --diff HEAD~1
-  skannr --report --root .                     # health report
-  skannr --question "..." --root . --format markdown
-  skannr --question "..." --root . --format json
-  skannr --question "..." --root . --watch      # re-run on file changes
-  skannr-agent --root .                         # interactive mode
-  skannr blast-radius --root . --hops 3         # blast radius analysis
-  skannr blast-radius --diff changes.patch --json
-
-Monorepo tip:
-  skannr --question "..." --root packages/my-package
-
-MCP (stdio): npx -y skannr --mcp   (or: skannr-mcp)
-  Cursor: { "mcpServers": { "skannr": { "command": "npx", "args": ["-y", "skannr", "--mcp"] } } }
-`,
-);
-
-program.parse(process.argv);
-
-const opts = program.opts<{
-  root: string;
-  question?: string;
-  limit?: number;
-  withMapping?: boolean;
-  mappingOutput?: string;
-  modules?: string;
-  lang?: string;
-  skipCache?: boolean;
-  cacheClear?: boolean;
-  cacheStats?: boolean;
-  report?: boolean;
-  diff?: string;
-  format?: string;
-  watch?: boolean;
-  telemetryOn?: boolean;
-  telemetryOff?: boolean;
-  mcp?: boolean;
-}>();
-
-function buildAnalyzeTelemetryFlags(
-  o: typeof opts,
-  outputFormat: 'human' | 'markdown' | 'json',
-  lang: Lang,
-  limit: number,
-): Record<string, boolean | string | number> {
-  return {
-    hasModules: Boolean(o.modules),
-    hasDiff: o.diff !== undefined,
-    hasWatch: Boolean(o.watch),
-    hasReport: Boolean(o.report),
-    hasMapping: Boolean(o.withMapping || o.mappingOutput),
-    skipCache: Boolean(o.skipCache),
-    format: outputFormat,
-    lang,
-    limit,
-  };
-}
-
-function resolveLangFlag(raw: string | undefined): Lang {
-  const value = (raw ?? 'auto').toLowerCase();
-  if (!VALID_LANGS.includes(value as Lang)) {
-    const display = raw === undefined || raw === '' ? '(empty)' : raw;
-    console.error('');
-    console.error(
-      `  ✗ Invalid --lang "${display}". Valid values: ${VALID_LANGS.join(', ')}`,
-    );
-    console.error('');
-    process.exit(1);
-  }
-  return value as Lang;
-}
-
-function resolveFormatFlag(raw: string | undefined): 'human' | 'markdown' | 'json' {
-  const fmt = (raw ?? 'human').toLowerCase();
-  if (fmt === 'json' || fmt === 'markdown' || fmt === 'human') {
-    return fmt;
-  }
-  const display = raw === undefined || raw === '' ? '(empty)' : raw;
-  console.error('');
-  console.error(
-    `  ✗ Invalid --format "${display}". Use human, markdown, or json.`,
-  );
-  console.error('');
-  process.exit(1);
-}
-
-void (async () => {
+program.action(async (
+  questionArg: string | undefined,
+  opts: {
+    root: string;
+    question?: string;
+    limit?: number;
+    withMapping?: boolean;
+    mappingOutput?: string;
+    modules?: string;
+    lang?: string;
+    skipCache?: boolean;
+    cacheClear?: boolean;
+    cacheStats?: boolean;
+    report?: boolean;
+    format?: string;
+    json?: boolean;
+    watch?: boolean;
+    telemetryOn?: boolean;
+    telemetryOff?: boolean;
+    mcp?: boolean;
+  },
+) => {
   try {
+    // MCP mode
     if (opts.mcp || process.argv.includes('--mcp')) {
       const { startMcpServer } = await import('./mcp-server');
       await startMcpServer();
       return;
     }
 
+    // Telemetry toggles
     if (opts.telemetryOn) {
       setTelemetryExplicit(true);
       console.log('Telemetry enabled. Thank you!');
       process.exit(0);
     }
-
     if (opts.telemetryOff) {
       setTelemetryExplicit(false);
       console.log('Telemetry disabled.');
       process.exit(0);
     }
 
+    // Legacy cache flags
     if (opts.cacheClear) {
       const cacheManager = getCacheManager();
       cacheManager.clear();
-      console.log('✅ Cache cleared successfully');
+      console.log('Cache cleared.');
       process.exit(0);
     }
-
     if (opts.cacheStats) {
       const cacheManager = getCacheManager();
       const stats = cacheManager.getStats();
-      console.log('\n📊 Cache Statistics:');
-      console.log(`   Hits: ${stats.hits}`);
-      console.log(`   Misses: ${stats.misses}`);
-      console.log(`   Hit Rate: ${stats.hitRate}%`);
-      console.log(`   Cache Size: ${(stats.cacheSize / 1024).toFixed(2)} KB`);
-      console.log(`   Cache Dir: ${cacheManager.getCacheDir()}\n`);
+      console.log('\n  Cache Statistics:');
+      console.log(`    Hits: ${stats.hits}`);
+      console.log(`    Misses: ${stats.misses}`);
+      console.log(`    Hit Rate: ${stats.hitRate}%`);
+      console.log(`    Size: ${(stats.cacheSize / 1024).toFixed(2)} KB`);
+      console.log(`    Dir: ${cacheManager.getCacheDir()}\n`);
       process.exit(0);
     }
 
     const lang = resolveLangFlag(opts.lang);
 
+    // Legacy --report flag
     if (opts.report) {
       runReport(opts.root, lang);
       process.exit(0);
     }
 
-    if (opts.diff !== undefined) {
-      console.error('');
-      console.error('  ✗ --diff is not available in this release.');
-      console.error('    Remove --diff or watch the changelog for git-scoped analysis.');
-      console.error('');
-      process.exit(1);
-    }
-
-    const question = opts.question?.trim() ?? '';
+    // Resolve question: positional arg takes precedence over --question flag
+    const question = (questionArg || opts.question || '').trim();
     if (!question) {
-      console.error('');
-      console.error('  ✗ Missing --question.');
-      console.error('');
-      console.error('  Example: skannr --question "how does auth work?" --root .');
-      console.error('  Cache only: skannr --cache-stats | skannr --cache-clear');
-      console.error('  Report:    skannr --report --root .');
-      console.error('');
       program.outputHelp();
-      process.exit(1);
+      process.exit(0);
     }
 
     const absoluteRoot = path.resolve(opts.root);
@@ -379,7 +302,7 @@ void (async () => {
     const langExtensions = resolveExtensionsForLanguage(lang);
     const extensions = langExtensions ?? config.extensions;
 
-    const outputFormat = resolveFormatFlag(opts.format);
+    const outputFormat = resolveFormatFlag(opts.format, opts.json);
 
     const analyzeOptions = {
       root: absoluteRoot,
@@ -409,10 +332,7 @@ void (async () => {
           process.stdout.write(formatted + (formatted.endsWith('\n') ? '' : '\n'));
           if (!watchTelemetrySent) {
             watchTelemetrySent = true;
-            track(
-              'analyze',
-              buildAnalyzeTelemetryFlags(opts, outputFormat, lang, limit),
-            );
+            track('analyze', buildTelemetryFlags(opts, outputFormat, lang, limit));
           }
         });
       } catch (error) {
@@ -446,11 +366,7 @@ void (async () => {
           : formatHuman(result);
 
     process.stdout.write(formatted + (formatted.endsWith('\n') ? '' : '\n'));
-
-    track(
-      'analyze',
-      buildAnalyzeTelemetryFlags(opts, outputFormat, lang, limit),
-    );
+    track('analyze', buildTelemetryFlags(opts, outputFormat, lang, limit));
   } catch (error) {
     console.error(
       'Error analyzing project:',
@@ -458,4 +374,162 @@ void (async () => {
     );
     process.exit(1);
   }
-})();
+});
+
+// ---------------------------------------------------------------------------
+// Subcommand: risk
+// ---------------------------------------------------------------------------
+async function runRisk(cmdOpts: { root: string; diff?: string; hops?: number; json?: boolean }): Promise<void> {
+  try {
+    const { computeBlastRadius, formatBlastRadiusText, formatBlastRadiusJson } =
+      await import('./blast-radius');
+
+    const absoluteRoot = path.resolve(cmdOpts.root);
+    assertRootExists(absoluteRoot);
+
+    const result = computeBlastRadius({
+      root: absoluteRoot,
+      diffPath: cmdOpts.diff,
+      hops: cmdOpts.hops ?? 2,
+    });
+
+    const output = cmdOpts.json
+      ? formatBlastRadiusJson(result)
+      : formatBlastRadiusText(result);
+
+    process.stdout.write(output + (output.endsWith('\n') ? '' : '\n'));
+  } catch (error) {
+    console.error(
+      'Error computing risk:',
+      error instanceof Error ? error.message : error,
+    );
+    process.exit(1);
+  }
+}
+
+function riskOptions(cmd: Command): Command {
+  return cmd
+    .option('--root <path>', 'project root directory', process.cwd())
+    .option('--diff <path>', 'path to a diff file (default: working tree vs HEAD)')
+    .option('-n, --hops <n>', 'max traversal hops (default: 2)', (v: string) => {
+      const n = parseInt(v, 10);
+      if (Number.isNaN(n) || n < 1) {
+        throw new InvalidArgumentError('must be a positive integer');
+      }
+      return n;
+    })
+    .option('--json', 'output as JSON instead of plain text');
+}
+
+riskOptions(program.command('risk').description('Check downstream impact and risk of your current changes'))
+  .action(runRisk);
+
+// Backward compat alias
+riskOptions(program.command('blast-radius').description('Alias for "risk"'))
+  .action(runRisk);
+
+// ---------------------------------------------------------------------------
+// Subcommand: report
+// ---------------------------------------------------------------------------
+program
+  .command('report')
+  .description('Print repository health summary (JSON)')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .option('--lang <mode>', 'language filter', 'auto')
+  .action((cmdOpts: { root: string; lang?: string }) => {
+    const lang = resolveLangFlag(cmdOpts.lang);
+    runReport(cmdOpts.root, lang);
+  });
+
+// ---------------------------------------------------------------------------
+// Subcommand: agent
+// ---------------------------------------------------------------------------
+program
+  .command('agent')
+  .description('Interactive exploration mode')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .action(async (cmdOpts: { root: string }) => {
+    process.argv = ['node', 'skannr-agent', '--root', cmdOpts.root];
+    await import('./agent-cli');
+  });
+
+// ---------------------------------------------------------------------------
+// Subcommand: cache
+// ---------------------------------------------------------------------------
+const cacheCommand = program
+  .command('cache')
+  .description('Manage analysis cache');
+
+cacheCommand
+  .command('clear')
+  .description('Clear all cached analysis results')
+  .action(() => {
+    const cacheManager = getCacheManager();
+    cacheManager.clear();
+    console.log('Cache cleared.');
+  });
+
+cacheCommand
+  .command('stats')
+  .description('Show cache statistics')
+  .action(() => {
+    const cacheManager = getCacheManager();
+    const stats = cacheManager.getStats();
+    console.log('\n  Cache Statistics:');
+    console.log(`    Hits: ${stats.hits}`);
+    console.log(`    Misses: ${stats.misses}`);
+    console.log(`    Hit Rate: ${stats.hitRate}%`);
+    console.log(`    Size: ${(stats.cacheSize / 1024).toFixed(2)} KB`);
+    console.log(`    Dir: ${cacheManager.getCacheDir()}\n`);
+  });
+
+// ---------------------------------------------------------------------------
+// Help
+// ---------------------------------------------------------------------------
+program.addHelpText(
+  'after',
+  `
+Examples:
+  skannr "how does auth work?"             Ask about the codebase
+  skannr "database queries" -n 5           Limit to 5 results
+  skannr "endpoints" --json                JSON output
+  skannr "class structure" --lang python   Force language
+
+  skannr risk                              Impact of uncommitted changes
+  skannr risk --diff feature.patch         Impact of a patch file
+  skannr risk -n 3 --json                  3 hops, JSON for CI
+
+  skannr report                            Repo health summary
+  skannr agent                             Interactive mode
+  skannr cache stats                       Cache hit rate
+  skannr cache clear                       Wipe cache
+
+MCP: npx -y skannr --mcp
+`,
+);
+
+// ---------------------------------------------------------------------------
+// Parse
+// ---------------------------------------------------------------------------
+program.parse(process.argv);
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function buildTelemetryFlags(
+  o: Record<string, unknown>,
+  outputFormat: 'human' | 'markdown' | 'json',
+  lang: Lang,
+  limit: number,
+): Record<string, boolean | string | number> {
+  return {
+    hasModules: Boolean(o.modules),
+    hasWatch: Boolean(o.watch),
+    hasReport: Boolean(o.report),
+    hasMapping: Boolean(o.withMapping || o.mappingOutput),
+    skipCache: Boolean(o.skipCache),
+    format: outputFormat,
+    lang,
+    limit,
+  };
+}

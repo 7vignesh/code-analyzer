@@ -1,6 +1,6 @@
 {
   "name": "skannr",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "A universal tool to analyze any codebase and generate semantic skeletons for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
     "skannr-mcp": "dist/mcp-cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs=require('fs'),p=require('path');const s=p.join('src','languages','grammars'),d=p.join('dist','languages','grammars');fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).filter(f=>f.endsWith('.wasm')).forEach(f=>fs.copyFileSync(p.join(s,f),p.join(d,f)));\"",
     "test": "jest",
     "lint": "eslint src --ext .ts",
     "start": "npm run build && node dist/cli.js",
@@ -34,11 +34,8 @@
     "commander": "^12.1.0",
     "ignore": "^7.0.5",
     "parse-diff": "0.12.0",
-    "ts-morph": "^21.0.1"
-  },
-  "optionalDependencies": {
-    "tree-sitter": "^0.25.0",
-    "tree-sitter-python": "^0.25.0"
+    "ts-morph": "^21.0.1",
+    "web-tree-sitter": "0.26.10"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",

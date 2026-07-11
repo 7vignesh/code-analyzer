@@ -1,19 +1,35 @@
+/**
+ * Language adapter registry.
+ * Routes files to the appropriate parser based on extension.
+ */
+
 import { LanguageAdapter } from './LanguageAdapter';
 import { TypeScriptAdapter } from './TypeScriptAdapter';
-import { PythonAdapter } from './PythonAdapter';
+import { TreeSitterAdapter } from './TreeSitterAdapter';
 import { GenericAdapter } from './GenericAdapter';
+import { LANG_CONFIGS } from './lang-config';
 import * as path from 'path';
 
-const adapters: LanguageAdapter[] = [
-  new TypeScriptAdapter(),
-  new PythonAdapter(),
-];
-
+const tsAdapter = new TypeScriptAdapter();
+const treeSitterAdapter = new TreeSitterAdapter(Object.values(LANG_CONFIGS));
 const generic = new GenericAdapter();
+
+// Initialize tree-sitter WASM in background (non-blocking).
+treeSitterAdapter.initializeSync();
+
+const adapters: LanguageAdapter[] = [
+  tsAdapter,
+  treeSitterAdapter,
+];
 
 export function getAdapter(filePath: string): LanguageAdapter {
   const ext = path.extname(filePath).toLowerCase();
   return adapters.find((a) => a.extensions.includes(ext)) ?? generic;
+}
+
+/** Await full initialization of WASM-based adapters. */
+export async function initializeAdapters(): Promise<void> {
+  await treeSitterAdapter.initialize();
 }
 
 export function detectRepoLanguages(root: string): string[] {

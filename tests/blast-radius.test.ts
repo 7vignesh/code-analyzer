@@ -10,17 +10,23 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-// Mock tree-sitter to avoid native build dependency in unit tests.
-jest.mock('tree-sitter', () => ({}), { virtual: true });
-jest.mock('tree-sitter-python', () => ({}), { virtual: true });
-jest.mock('../src/languages/PythonAdapter', () => ({
-  PythonAdapter: class {
-    name = 'python';
-    extensions = ['.py', '.pyi'];
+// Mock tree-sitter WASM to avoid loading .wasm files in unit tests.
+jest.mock('web-tree-sitter', () => ({
+  default: {
+    init: jest.fn().mockResolvedValue(undefined),
+    Language: { load: jest.fn().mockResolvedValue({}) },
+  },
+}), { virtual: true });
+jest.mock('../src/languages/TreeSitterAdapter', () => ({
+  TreeSitterAdapter: class {
+    name = 'tree-sitter';
+    extensions = ['.py', '.pyi', '.go', '.rs', '.java'];
     canHandle() { return false; }
     generateSkeleton() { return { skeleton: '', lineRanges: [] }; }
     extractSymbols() { return []; }
     extractImports() { return []; }
+    initializeSync() {}
+    async initialize() {}
   },
 }));
 

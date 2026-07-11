@@ -14,7 +14,11 @@ skannr "database queries" -n 5 --json
 
 # Check risk before pushing
 skannr risk
-skannr risk --diff feature.patch --json
+
+# Review staged code against team rules
+skannr guard
+skannr guard --fix
+skannr guard install    # pre-commit hook
 
 # Interactive agent mode
 skannr agent`,
@@ -23,6 +27,9 @@ npx skannr "how does this work?"
 
 # Risk check (no install needed)
 npx skannr risk
+
+# Guard review
+npx skannr guard --json
 
 # Health report
 npx skannr report

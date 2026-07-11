@@ -6,6 +6,7 @@ import {
   Network,
   Plug,
   RefreshCw,
+  Shield,
   ShieldCheck,
   Zap,
 } from 'lucide-react'
@@ -26,6 +27,11 @@ const features = [
     icon: AlertTriangle,
     title: 'Risk Analysis',
     body: 'Run "skannr risk" before pushing. Traverses the dependency graph, finds downstream affected files, flags untested code, and scores risk 0-10. Deterministic and instant.',
+  },
+  {
+    icon: Shield,
+    title: 'Guard — AI Code Review',
+    body: 'Run "skannr guard" to review staged changes against team-defined rules. Symbol-level analysis with cross-file context. Auto-fix what\'s fixable, block what isn\'t. Installs as a pre-commit hook.',
   },
   {
     icon: Code2,

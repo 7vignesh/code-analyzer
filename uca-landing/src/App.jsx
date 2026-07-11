@@ -1,6 +1,7 @@
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Problem from './components/Problem'
+import TokenSavings from './components/TokenSavings'
 import HowItWorks from './components/HowItWorks'
 import Features from './components/Features'
 import LanguageSupport from './components/LanguageSupport'
@@ -30,6 +31,7 @@ export default function App() {
       <Navbar />
       <Hero />
       <Problem />
+      <TokenSavings />
       <HowItWorks />
       <Features />
       <LanguageSupport />

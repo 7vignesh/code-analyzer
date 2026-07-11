@@ -3,8 +3,11 @@ import Reveal from './Reveal'
 const rows = [
   ['TypeScript / TSX', 'Full', 'AST via ts-morph'],
   ['JavaScript / JSX', 'Full', 'AST via ts-morph'],
-  ['Python', 'Structural', 'Regex (signatures + type hints)'],
-  ['Go, Rust, Java, others', 'Basic', 'First 50 lines fallback'],
+  ['Python', 'Full', 'AST via tree-sitter WASM'],
+  ['Go', 'Full', 'AST via tree-sitter WASM'],
+  ['Rust', 'Full', 'AST via tree-sitter WASM'],
+  ['Java', 'Full', 'AST via tree-sitter WASM'],
+  ['Others', 'Basic', 'First 50 lines fallback'],
 ]
 
 function badgeClass(level) {

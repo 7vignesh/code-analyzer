@@ -29,8 +29,8 @@ const features = [
   },
   {
     icon: Code2,
-    title: 'Auto Language Detection',
-    body: "Detects the repo's dominant language automatically. TypeScript, JavaScript, and Python supported. Generic fallback for everything else.",
+    title: 'Multi-Language AST',
+    body: "TypeScript, JavaScript, Python, Go, Rust, and Java — all parsed via AST. No native build tools required. WASM-based tree-sitter runs everywhere npm does.",
   },
   {
     icon: Database,

@@ -84,6 +84,33 @@ export async function startMcpServer(): Promise<void> {
           required: ['root'],
         },
       },
+      {
+        name: 'guard_review',
+        description:
+          'Review staged or diff changes against team-defined rules. Returns structured violations with severity, confidence, and fixability.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            root: {
+              type: 'string',
+              description: 'Absolute path to the repo root',
+            },
+            diff: {
+              type: 'string',
+              description: 'Unified diff content (if omitted, reviews staged files)',
+            },
+            diff_only: {
+              type: 'boolean',
+              description: 'Skip cross-file context for faster review (default: false)',
+            },
+            fix: {
+              type: 'boolean',
+              description: 'Apply auto-fixes for fixable violations (default: false)',
+            },
+          },
+          required: ['root'],
+        },
+      },
     ],
   }));
 
@@ -140,6 +167,28 @@ export async function startMcpServer(): Promise<void> {
 
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    }
+
+    if (toolName === 'guard_review') {
+      const { runGuard, formatGuardJson } = await import('./guard/index');
+      const root = String(args.root ?? '');
+      const diffContent =
+        typeof args.diff === 'string' && args.diff.length > 0
+          ? args.diff
+          : undefined;
+      const diffOnly = args.diff_only === true;
+      const fix = args.fix === true;
+
+      const { result } = await runGuard({
+        root,
+        diffOnly,
+        fix,
+        ...(diffContent ? { prMode: false } : {}),
+      });
+
+      return {
+        content: [{ type: 'text', text: formatGuardJson(result) }],
       };
     }
 

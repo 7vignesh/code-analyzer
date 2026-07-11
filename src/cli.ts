@@ -484,6 +484,102 @@ cacheCommand
   });
 
 // ---------------------------------------------------------------------------
+// Subcommand: guard
+// ---------------------------------------------------------------------------
+const guardCommand = program
+  .command('guard')
+  .description('Review staged changes against team-defined rules')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .option('--fix', 'apply auto-fixes for fixable violations')
+  .option('--dry-run', 'show what --fix would change without writing')
+  .option('--pr-mode', 'review full PR diff vs base branch')
+  .option('--diff-only', 'skip cross-file context (faster, cheaper)')
+  .option('--no-cache', 'ignore symbol cache')
+  .option('--json', 'output as JSON')
+  .action(async (cmdOpts: {
+    root: string;
+    fix?: boolean;
+    dryRun?: boolean;
+    prMode?: boolean;
+    diffOnly?: boolean;
+    noCache?: boolean;
+    json?: boolean;
+  }) => {
+    try {
+      const { runGuard, formatGuardText, formatGuardJson } = await import('./guard/index');
+      const { result, exitCode } = await runGuard({
+        root: cmdOpts.root,
+        fix: cmdOpts.fix,
+        dryRun: cmdOpts.dryRun,
+        prMode: cmdOpts.prMode,
+        diffOnly: cmdOpts.diffOnly,
+        noCache: cmdOpts.noCache,
+        json: cmdOpts.json,
+      });
+
+      const output = cmdOpts.json
+        ? formatGuardJson(result)
+        : formatGuardText(result);
+
+      process.stdout.write(output + (output.endsWith('\n') ? '' : '\n'));
+      process.exit(exitCode);
+    } catch (error) {
+      console.error(
+        'Error running guard:',
+        error instanceof Error ? error.message : error,
+      );
+      process.exit(2);
+    }
+  });
+
+guardCommand
+  .command('install')
+  .description('Install git pre-commit hook')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .action(async (cmdOpts: { root: string }) => {
+    const { installHook } = await import('./guard/index');
+    const { installed, message } = installHook(path.resolve(cmdOpts.root));
+    console.log(message);
+    process.exit(installed ? 0 : 1);
+  });
+
+guardCommand
+  .command('uninstall')
+  .description('Remove git pre-commit hook')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .action(async (cmdOpts: { root: string }) => {
+    const { uninstallHook } = await import('./guard/index');
+    const { removed, message } = uninstallHook(path.resolve(cmdOpts.root));
+    console.log(message);
+    process.exit(removed ? 0 : 1);
+  });
+
+guardCommand
+  .command('config')
+  .description('Show loaded rules and provider config')
+  .option('--root <path>', 'project root directory', process.cwd())
+  .action(async (cmdOpts: { root: string }) => {
+    const { loadRules, loadGuardConfig } = await import('./guard/index');
+    const root = path.resolve(cmdOpts.root);
+    try {
+      const rules = loadRules(root);
+      const config = loadGuardConfig(root);
+      console.log('\n  Guard Config:');
+      console.log(`    Provider: ${config.provider}`);
+      console.log(`    Model: ${config.model}`);
+      console.log(`    API Key: ${config.apiKey ? '***' + config.apiKey.slice(-4) : 'not set'}`);
+      console.log(`\n  Rules (${rules.length}):`);
+      for (const r of rules) {
+        console.log(`    [${r.id}] ${r.severity} | fixable=${r.fixable} | ${r.description}`);
+      }
+      console.log('');
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : error);
+      process.exit(2);
+    }
+  });
+
+// ---------------------------------------------------------------------------
 // Help
 // ---------------------------------------------------------------------------
 program.addHelpText(
@@ -498,6 +594,11 @@ Examples:
   skannr risk                              Impact of uncommitted changes
   skannr risk --diff feature.patch         Impact of a patch file
   skannr risk -n 3 --json                  3 hops, JSON for CI
+
+  skannr guard                             Review staged changes against rules
+  skannr guard --fix                       Auto-fix fixable violations
+  skannr guard --pr-mode --json            Review PR diff, JSON output
+  skannr guard install                     Install pre-commit hook
 
   skannr report                            Repo health summary
   skannr agent                             Interactive mode

@@ -3,12 +3,8 @@ import Reveal from './Reveal'
 const steps = [
   {
     title: 'Point it at any repo',
-    code: 'skannr "how does auth work?"',
-    desc: "No configuration needed. Works on repos you've never touched before. Auto-detects language and module structure from the folder layout.",
-  },
-  {
-    title: 'Modules discovered automatically',
-    desc: 'Reads the folder structure and identifies logical modules - src/auth, src/api, lib/db. No config file required, though one is supported for fine-tuned control.',
+    code: 'npx skannr "how does auth work?"',
+    desc: "No install needed. Works on repos you've never touched before. Auto-detects language and module structure from the folder layout.",
   },
   {
     title: 'Hybrid ranking finds the right files',
@@ -20,8 +16,18 @@ const steps = [
   },
   {
     title: 'Check risk before you push',
-    code: 'skannr risk',
+    code: 'npx skannr risk',
     desc: 'Analyzes your uncommitted changes, traverses the dependency graph to find downstream affected files, flags untested code, and gives you a 0-10 risk score. Deterministic, instant, no API call.',
+  },
+  {
+    title: 'AI code review on every commit',
+    code: 'npx skannr guard',
+    desc: 'Reviews staged changes against coding rules at the symbol level. Auto-detects your coding agent (Claude, Gemini, Kiro, Ollama) — no API key needed if you already use one. Install as a pre-commit hook with "skannr guard install".',
+  },
+  {
+    title: 'Plug into any AI tool via MCP',
+    code: 'npx -y skannr --mcp',
+    desc: 'One config line gives Cursor, Claude Code, Gemini CLI, or any MCP tool access to codebase search, risk analysis, and guard review. Your assistant calls skannr automatically when you ask about code.',
   },
 ]
 

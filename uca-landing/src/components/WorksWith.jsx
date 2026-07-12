@@ -2,24 +2,34 @@ import Reveal from './Reveal'
 
 const tools = [
   {
-    name: 'Gemini CLI',
-    desc: 'Add as MCP server in ~/.gemini/config.json',
-    barClass: 'bg-accent',
-  },
-  {
     name: 'Claude Code',
-    desc: 'Works via MCP over stdio',
+    desc: 'MCP integration + Guard auto-detects claude CLI for zero-config reviews',
     barClass: 'bg-purple',
   },
   {
+    name: 'Gemini CLI',
+    desc: 'MCP via ~/.gemini/config.json + Guard auto-detects gemini CLI',
+    barClass: 'bg-accent',
+  },
+  {
     name: 'Cursor',
-    desc: 'Add to ~/.cursor/mcp.json',
+    desc: 'Add to ~/.cursor/mcp.json for codebase search + guard + risk',
     barClass: 'bg-green',
   },
   {
-    name: 'Any MCP Client',
-    desc: 'Standard Model Context Protocol over stdio',
+    name: 'Kiro',
+    desc: 'Guard auto-detects kiro-cli — reviews use your existing session',
     barClass: 'bg-yellow',
+  },
+  {
+    name: 'Ollama',
+    desc: 'Local inference, no API key — Guard uses it automatically if running',
+    barClass: 'bg-accent',
+  },
+  {
+    name: 'Any MCP Client',
+    desc: 'Standard Model Context Protocol over stdio — works with any tool',
+    barClass: 'bg-purple',
   },
 ]
 
@@ -32,7 +42,7 @@ export default function WorksWith() {
             Works with the tools you already use.
           </h2>
         </Reveal>
-        <div className="mt-12 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {tools.map((tool, i) => (
             <Reveal key={tool.name} delay={i * 90} className="h-full">
               <article className="group flex h-full min-h-[160px] gap-4 rounded-xl border border-border bg-card p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-accent/25 hover:bg-card-hover hover:shadow-[0_24px_48px_-28px_rgba(0,0,0,0.9)]">

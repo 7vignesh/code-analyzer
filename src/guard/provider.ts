@@ -80,6 +80,97 @@ function extractJson(text: string): string {
 }
 
 /**
+ * Call a CLI-based provider (claude, gemini, kiro).
+ * These use the user's existing authenticated session — no API key needed.
+ */
+async function callCli(
+  command: string,
+  fullPrompt: string,
+): Promise<string> {
+  const { execSync } = await import('child_process');
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  // Write prompt to a temp file (avoids ARG_MAX limits on large diffs)
+  const tmpFile = path.join(os.tmpdir(), `skannr-guard-${Date.now()}.txt`);
+  fs.writeFileSync(tmpFile, fullPrompt, 'utf-8');
+
+  try {
+    let result: string;
+
+    switch (command) {
+      case 'claude-cli':
+        // Claude CLI accepts prompt via stdin pipe with --print flag
+        result = execSync(`cat "${tmpFile}" | claude --print`, {
+          encoding: 'utf-8',
+          timeout: 120_000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+        break;
+
+      case 'gemini-cli':
+        // Gemini CLI accepts prompt via -p flag
+        result = execSync(`gemini -p "$(cat "${tmpFile}")"`, {
+          encoding: 'utf-8',
+          timeout: 120_000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+        break;
+
+      case 'kiro-cli':
+        // Kiro CLI accepts prompt via stdin in non-interactive mode
+        result = execSync(`cat "${tmpFile}" | kiro-cli chat --no-interactive "Review and respond with JSON only."`, {
+          encoding: 'utf-8',
+          timeout: 120_000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+        break;
+
+      default:
+        throw new Error(`Unknown CLI provider: ${command}`);
+    }
+
+    return result;
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch {}
+  }
+}
+
+/**
+ * Call Ollama local inference.
+ */
+async function callOllama(
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<string> {
+  const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+  const url = `${baseUrl}/api/chat`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: model || 'llama3',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      stream: false,
+      format: 'json',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json() as any;
+  return data.message?.content ?? '';
+}
+
+/**
  * Call Gemini API with structured output enforcement.
  */
 async function callGemini(
@@ -170,9 +261,24 @@ export async function runLlmReview(
 
     let rawResponse: string;
     try {
-      rawResponse = config.provider === 'openai'
-        ? await callOpenAI(config, systemPrompt, prompt)
-        : await callGemini(config, systemPrompt, prompt);
+      switch (config.provider) {
+        case 'openai':
+          rawResponse = await callOpenAI(config, systemPrompt, prompt);
+          break;
+        case 'gemini':
+          rawResponse = await callGemini(config, systemPrompt, prompt);
+          break;
+        case 'ollama':
+          rawResponse = await callOllama(config.model, systemPrompt, prompt);
+          break;
+        case 'claude-cli':
+        case 'gemini-cli':
+        case 'kiro-cli':
+          rawResponse = await callCli(config.provider, systemPrompt + '\n\n' + prompt);
+          break;
+        default:
+          throw new Error(`Unsupported provider: ${config.provider}`);
+      }
     } catch (err) {
       throw new Error(
         `Provider call failed (${config.provider}): ${err instanceof Error ? err.message : String(err)}`,

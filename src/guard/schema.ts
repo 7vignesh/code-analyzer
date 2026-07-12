@@ -52,8 +52,8 @@ export const ReviewResponseSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export const GuardConfigSchema = z.object({
-  provider: z.enum(['gemini', 'openai']).default('gemini'),
-  model: z.string().default('gemini-2.0-flash-exp'),
+  provider: z.enum(['gemini', 'openai', 'claude-cli', 'gemini-cli', 'kiro-cli', 'ollama']).default('auto' as any),
+  model: z.string().default(''),
   apiKey: z.string().optional(),
   baseUrl: z.string().optional(),
 });

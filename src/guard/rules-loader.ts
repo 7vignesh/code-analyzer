@@ -103,20 +103,75 @@ export function loadGuardConfig(root: string): GuardConfig {
   }
 
   // Env vars override file config
-  const provider = (process.env.SKANNR_GUARD_PROVIDER || rawConfig.provider || 'gemini') as string;
-  const model = (process.env.SKANNR_GUARD_MODEL || rawConfig.model || 'gemini-2.0-flash-exp') as string;
+  const explicitProvider = process.env.SKANNR_GUARD_PROVIDER || rawConfig.provider as string | undefined;
+  const model = (process.env.SKANNR_GUARD_MODEL || rawConfig.model || '') as string;
   const apiKey = process.env.SKANNR_GUARD_API_KEY
     || process.env.GEMINI_API_KEY
     || process.env.OPENAI_API_KEY
     || (rawConfig.apiKey as string | undefined);
   const baseUrl = process.env.OPENAI_BASE_URL || (rawConfig.baseUrl as string | undefined);
 
-  const result = GuardConfigSchema.safeParse({ provider, model, apiKey, baseUrl });
-  if (!result.success) {
-    throw new Error(`Invalid guard config: ${result.error.issues.map((i) => i.message).join(', ')}`);
+  // Auto-detect provider if not explicitly set
+  const provider = explicitProvider || autoDetectProvider(apiKey);
+
+  return {
+    provider: provider as GuardConfig['provider'],
+    model: model || getDefaultModel(provider),
+    apiKey,
+    baseUrl,
+  };
+}
+
+/**
+ * Auto-detect the best available provider.
+ * Priority: existing CLI tools (free, already authenticated) > API keys.
+ */
+function autoDetectProvider(apiKey?: string): string {
+  const { execSync } = require('child_process');
+
+  // Check for CLI tools first (no API key needed)
+  const cliChecks: Array<[string, string]> = [
+    ['claude', 'claude-cli'],
+    ['gemini', 'gemini-cli'],
+    ['kiro-cli', 'kiro-cli'],
+  ];
+
+  for (const [cmd, provider] of cliChecks) {
+    try {
+      execSync(`${cmd} --version`, { stdio: 'ignore', timeout: 3000 });
+      return provider;
+    } catch {
+      // Not available, try next
+    }
   }
 
-  return result.data as GuardConfig;
+  // Check for Ollama (local, no key needed)
+  try {
+    execSync('ollama --version', { stdio: 'ignore', timeout: 3000 });
+    return 'ollama';
+  } catch {
+    // Not available
+  }
+
+  // Fall back to API-based providers if key is available
+  if (apiKey) {
+    if (process.env.GEMINI_API_KEY) return 'gemini';
+    if (process.env.OPENAI_API_KEY) return 'openai';
+    return 'gemini'; // default API provider
+  }
+
+  // Nothing found — default to gemini-cli and let it fail with a clear error
+  return 'gemini-cli';
+}
+
+/** Get the default model for a provider. */
+function getDefaultModel(provider: string): string {
+  switch (provider) {
+    case 'gemini': return 'gemini-2.0-flash-exp';
+    case 'openai': return 'gpt-4o';
+    case 'ollama': return 'llama3';
+    default: return ''; // CLI providers don't need a model specified
+  }
 }
 
 /** Find the first existing rules file in the project. */

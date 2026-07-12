@@ -57,11 +57,11 @@ export interface GuardResult {
 
 /** Guard configuration (provider, model, etc.). */
 export interface GuardConfig {
-  /** LLM provider: 'gemini' | 'openai' */
-  provider: 'gemini' | 'openai';
+  /** LLM provider: 'gemini' | 'openai' | 'claude-cli' | 'gemini-cli' | 'kiro-cli' | 'ollama' */
+  provider: 'gemini' | 'openai' | 'claude-cli' | 'gemini-cli' | 'kiro-cli' | 'ollama';
   /** Model name (e.g. 'gemini-2.0-flash-exp', 'gpt-4o'). */
   model: string;
-  /** API key (resolved from env if not set). */
+  /** API key (resolved from env if not set). Only needed for 'gemini' and 'openai' providers. */
   apiKey?: string;
   /** OpenAI-compatible base URL (for openai provider). */
   baseUrl?: string;

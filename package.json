@@ -1,6 +1,6 @@
 {
   "name": "skannr",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A universal tool to analyze any codebase and generate semantic skeletons for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

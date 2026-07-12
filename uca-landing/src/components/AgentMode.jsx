@@ -19,7 +19,7 @@ export default function AgentMode() {
               <span className="ml-2 font-mono text-xs text-[#888]">bash</span>
             </div>
             <pre className="overflow-x-auto p-5 font-mono text-sm leading-7 text-[#e8e8e8]">
-            <span>$ skannr-agent --root ./my-project</span>
+            <span>$ skannr agent</span>
             {'\n\n'}
             <span className="text-accent">{'>'}</span> <span>/help</span>
             {'\n'}  <span className="text-white">/files</span>               List currently retrieved files

@@ -43,7 +43,7 @@ export default function Problem() {
           ))}
         </div>
         <Reveal delay={200}>
-          <p className="mt-10 text-center text-[#888]">Universal Code Analyzer fixes all three.</p>
+          <p className="mt-10 text-center text-[#888]">Skannr fixes all three.</p>
         </Reveal>
       </div>
     </section>

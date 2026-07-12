@@ -16,23 +16,57 @@ const RULES_PATHS = [
   '.skannr/rules.yml',
 ];
 
-/** Load and validate rules from the project root. */
+/** Built-in default rules used when no .skannr/rules.json exists. */
+const DEFAULT_RULES: GuardRule[] = [
+  {
+    id: 'no-any-type',
+    description: 'Do not use the `any` type in TypeScript; use explicit types or `unknown`.',
+    severity: 'high',
+    fixable: true,
+    category: 'type-safety',
+  },
+  {
+    id: 'no-console-log',
+    description: 'Remove console.log statements before committing; use a proper logger in production code.',
+    severity: 'medium',
+    fixable: true,
+    category: 'code-quality',
+  },
+  {
+    id: 'error-handling',
+    description: 'Async functions that can throw should have error handling (try/catch or .catch()).',
+    severity: 'high',
+    fixable: false,
+    category: 'reliability',
+  },
+  {
+    id: 'no-hardcoded-secrets',
+    description: 'Do not hardcode API keys, passwords, tokens, or connection strings. Use environment variables.',
+    severity: 'critical',
+    fixable: false,
+    category: 'security',
+  },
+  {
+    id: 'function-complexity',
+    description: 'Functions should not exceed ~40 lines. Extract helper functions for complex logic.',
+    severity: 'medium',
+    fixable: false,
+    category: 'maintainability',
+  },
+  {
+    id: 'unused-imports',
+    description: 'Remove unused imports.',
+    severity: 'low',
+    fixable: true,
+    category: 'code-quality',
+  },
+];
+
+/** Load and validate rules from the project root. Falls back to defaults if no file exists. */
 export function loadRules(root: string): GuardRule[] {
   const rulesPath = findRulesFile(root);
   if (!rulesPath) {
-    throw new Error(
-      `No rules file found. Create .skannr/rules.json with your team's review rules.\n` +
-      `Example:\n` +
-      `{\n` +
-      `  "rules": [{\n` +
-      `    "id": "no-any-type",\n` +
-      `    "description": "Do not use the \`any\` type in TypeScript.",\n` +
-      `    "severity": "high",\n` +
-      `    "fixable": true,\n` +
-      `    "category": "type-safety"\n` +
-      `  }]\n` +
-      `}`,
-    );
+    return DEFAULT_RULES;
   }
 
   const raw = fs.readFileSync(rulesPath, 'utf-8');

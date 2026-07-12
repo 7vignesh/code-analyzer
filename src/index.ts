@@ -3,7 +3,7 @@
  */
 
 import * as path from 'path';
-import { discoverModules, readFileContent, scanFiles, scanRocketChatFiles, scanTypeScriptFiles } from './scanner';
+import { discoverModules, readFileContent, scanFiles, scanTypeScriptFiles } from './scanner';
 import { rankFiles } from './ranker';
 import { rankFilesEnhanced } from './ranker-enhanced';
 import { buildSkeletonForFile } from './skeletonizer';
@@ -194,7 +194,7 @@ function resolveExtensions(
 export { rankFiles } from './ranker';
 export { rankFilesEnhanced } from './ranker-enhanced';
 export { buildSkeletonForFile } from './skeletonizer';
-export { scanTypeScriptFiles, scanRocketChatFiles, scanFiles, discoverModules } from './scanner';
+export { scanTypeScriptFiles, scanFiles, discoverModules } from './scanner';
 export { countTokens } from './tokenizer';
 export {
   buildSkeletonWithMapping,

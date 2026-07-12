@@ -145,13 +145,6 @@ export function scanTypeScriptFiles(rootDir: string): string[] {
   return scanFiles(rootDir, { extensions: ['.ts', '.tsx'] });
 }
 
-export function scanRocketChatFiles(rootDir: string, moduleKeys?: string[]): string[] {
-  return scanFiles(rootDir, {
-    extensions: ['.ts', '.tsx'],
-    moduleKeys,
-  });
-}
-
 export function readFileContent(filePath: string): string | null {
   try {
     return fs.readFileSync(filePath, 'utf-8');

@@ -1,17 +1,6 @@
 # Skannr
 
-A CLI tool and MCP server that helps AI agents understand **any codebase**.
-It scans files, generates compressed structural "skeletons", and ranks results
-using hybrid retrieval — reducing token usage by ~96% vs full file scans.
-
-## How It Works
-
-1. You point it at any repo with `--root /path/to/repo`
-2. It auto-detects the language (TypeScript, JavaScript, Python, or generic fallback)
-3. It auto-discovers your project's modules from the folder structure
-4. For your question, it ranks the most relevant files using lexical + structural + dependency-graph analysis
-5. It strips function bodies from files (keeping types, signatures, imports)
-6. Returns compact skeletons an AI can reason over without blowing the context window
+A CLI tool and MCP server that helps developers and AI assistants understand any codebase. Scans files, generates compressed structural skeletons, and ranks results using hybrid retrieval. Reduces token usage by 96.5% vs full file reads.
 
 ## Install
 
@@ -19,66 +8,105 @@ using hybrid retrieval — reducing token usage by ~96% vs full file scans.
 npm install -g skannr
 ```
 
-## Usage
-
-### CLI
+Or use without installing:
 
 ```bash
-# Basic
-skannr --question "how does authentication work?" --root /path/to/any/repo
-
-# Limit results
-skannr --question "database connection setup" --root . --limit 5
-
-# Focus on specific modules (auto-discovered if not specified)
-skannr --question "permission checks" --root . --modules auth,middleware
-
-# Force language
-skannr --question "class structure" --root /path/to/python/project --lang python
-
-# Interactive agent mode
-skannr-agent --root /path/to/repo
-
-# Cache management
-skannr --cache-stats
-skannr --cache-clear
-skannr --question "..." --skip-cache
-
-# Output: human (default), markdown, or json
-skannr --question "..." --root . --format markdown
-skannr --question "..." --root . --format json
-
-# Repository health report (JSON on stdout)
-skannr --report --root .
-
-# Re-run analysis when files change (debounced; uses fresh analysis each pass)
-skannr --question "..." --root . --watch
+npx skannr "how does auth work?"
 ```
 
-### Watch mode (`--watch`)
+## Usage
 
-Use `--watch` when you want Skannr to stay running and **re-analyze after relevant file changes** (large repos you edit often). Changes under common build/vendor dirs are ignored (`node_modules`, `.git`, `dist`, etc.). Press **Ctrl+C** to stop.
+### Ask about any codebase
 
-Each run bypasses the analysis cache so results reflect the tree as it is now.
+```bash
+skannr "how does authentication work?"
+skannr "database queries" -n 5
+skannr "API endpoints" --json
+skannr "class structure" --lang python
+```
 
-### Anonymous telemetry (opt-in)
+No config needed. Auto-detects language and module structure.
 
-Telemetry is **off unless you enable it** (or accept deferred opt-in — see below). It sends **only which CLI flags were used** — never your question text, file paths, or code.
+### Risk analysis
 
-- Enable: `skannr --telemetry-on`
-- Disable: `skannr --telemetry-off`
+Check the downstream impact of your changes before pushing:
 
-Settings are stored under `~/.skannr/config.json`. The first time you run an analyze command with no config yet, Skannr may show a short notice; you can opt in or out anytime with the flags above.
+```bash
+skannr risk
+skannr risk --json
+skannr risk -n 3
+skannr risk --diff feature.patch
+```
 
-If you take no action, telemetry may turn on automatically **after 7 days** from that notice unless you explicitly disabled it with `--telemetry-off`.
+Walks the dependency graph, finds affected files, flags untested code, gives you a 0-10 score. No LLM, no API key, runs in under 2 seconds.
+
+### Guard (AI code review)
+
+Reviews staged changes against coding rules at the symbol level:
+
+```bash
+git add .
+skannr guard
+skannr guard --fix
+skannr guard --fix --dry-run
+skannr guard --pr-mode
+skannr guard --json
+```
+
+Auto-detects your coding agent (Claude, Gemini, Kiro, Ollama). No API key needed if you already have one installed. Works out of the box with built-in rules.
+
+Install as a pre-commit hook:
+
+```bash
+skannr guard install
+skannr guard uninstall
+```
+
+Custom rules (optional):
+
+```json
+// .skannr/rules.json
+{
+  "rules": [
+    {
+      "id": "no-mutations",
+      "description": "Do not mutate function arguments",
+      "severity": "high",
+      "fixable": false,
+      "category": "functional"
+    }
+  ]
+}
+```
+
+### Other commands
+
+```bash
+skannr report          # repo health summary (JSON)
+skannr agent           # interactive exploration mode
+skannr cache stats     # cache hit rate
+skannr cache clear     # wipe cache
+```
+
+## Supported Languages
+
+| Language | Support | Method |
+|---|---|---|
+| TypeScript / TSX | Full AST | ts-morph |
+| JavaScript / JSX | Full AST | ts-morph |
+| Python | Full AST | tree-sitter WASM |
+| Go | Full AST | tree-sitter WASM |
+| Rust | Full AST | tree-sitter WASM |
+| Java | Full AST | tree-sitter WASM |
+| Others | Basic | First 50 lines fallback |
+
+No native build tools required. WASM grammars run everywhere npm runs.
 
 ## MCP Server
 
-`skannr` ships with a built-in MCP server. One-time setup per AI tool:
+Exposes three tools: `scan_codebase`, `blast_radius`, `guard_review`.
 
-### Cursor
-
-`~/.cursor/mcp.json`:
+One-time setup for your AI tool:
 
 ```json
 {
@@ -91,43 +119,46 @@ If you take no action, telemetry may turn on automatically **after 7 days** from
 }
 ```
 
-### Claude Desktop / Claude Code
+Works with Cursor, Claude Code, Gemini CLI, Kiro, VS Code Copilot, and any MCP-compatible tool.
 
-`~/Library/Application Support/Claude/claude_desktop_config.json`:
+After setup, just ask your assistant:
+- "How does auth work in this repo?"
+- "Review my staged changes"
+- "What's the risk of my current diff?"
 
-```json
-{
-  "mcpServers": {
-    "skannr": {
-      "command": "npx",
-      "args": ["-y", "skannr", "--mcp"]
-    }
-  }
-}
+## Risk Score Formula
+
+```
+risk = 2.5 x (affected files / total files)
+     + 2.5 x (avg centrality of affected files)
+     + 3.5 x (% of affected files with no tests)
+     + 1.5 x (max hop reached / max hops configured)
 ```
 
-### Gemini CLI
+Deterministic. Same diff always produces the same score. CI-gateable:
 
-`~/.gemini/config.json`:
-
-```json
-{
-  "mcpServers": {
-    "skannr": {
-      "command": "npx",
-      "args": ["-y", "skannr", "--mcp"]
-    }
-  }
-}
+```bash
+RISK=$(skannr risk --json | jq '.riskScore')
+if [ $(echo "$RISK > 7" | bc -l) -eq 1 ]; then exit 1; fi
 ```
 
-Alternatively run the dedicated binary: `skannr-mcp` (same stdio server).
+## Guard Providers
+
+Guard auto-detects in this order (no config needed):
+
+1. `claude` CLI (uses your existing session)
+2. `gemini` CLI (uses your existing session)
+3. `kiro-cli` (uses your existing session)
+4. `ollama` (local, no auth)
+5. Gemini API (set `GEMINI_API_KEY`)
+6. OpenAI API (set `OPENAI_API_KEY`)
+
+Override with `SKANNR_GUARD_PROVIDER` env var or `.skannr/guard.json`.
 
 ## Config File (optional)
 
-Drop a `code-analyzer.config.json` in your repo root:
-
 ```json
+// code-analyzer.config.json (project root)
 {
   "modules": {
     "auth": ["src/auth", "lib/auth"],
@@ -139,31 +170,25 @@ Drop a `code-analyzer.config.json` in your repo root:
 }
 ```
 
-## Supported Languages
-
-| Language | Skeleton Support |
-|---|---|
-| TypeScript / TSX | Full AST (ts-morph) |
-| JavaScript / JSX | Full AST (ts-morph) |
-| Python | Regex-based (signatures + types) |
-| Others | First 50 lines (generic fallback) |
-
 ## Performance
-
-Benchmarked on large TypeScript monorepo:
 
 | Metric | Result |
 |---|---|
-| Token Reduction vs Full Scan | ~96.5% |
-| Token Reduction vs Top-N | ~78.2% |
-| Avg keyword coverage | ~75% |
-| Directory diversity (top-5) | ~80% |
-| Average execution time | ~1.2s |
+| Token reduction vs full scan | 96.5% |
+| Typical query time | 1-2 seconds |
+| Risk analysis | under 2 seconds (no API call) |
+| Guard review | 5-15 seconds (LLM round-trip) |
+| Package size | 450KB compressed |
 
-## Interactive Agent Commands
+## Interactive Agent
+
+```bash
+skannr agent
+```
+
+Commands inside the agent:
 
 ```
-/help              Show all commands
 /files             List retrieved files
 /symbols <query>   Search for symbols
 /symbol <id>       Get full implementation
@@ -173,88 +198,12 @@ Benchmarked on large TypeScript monorepo:
 /exit              Quit
 ```
 
-## Blast Radius
+Requires `GEMINI_API_KEY` for the interactive agent mode.
 
-Analyze the downstream impact and risk of a code change. Given a git diff,
-blast-radius identifies which files are affected, how central they are in the
-dependency graph, and whether they have test coverage.
+## Architecture
 
-**Limitation (v1):** Traversal is computed at file granularity — "file A
-imports file B" — not at function-call level. Function-level resolution is
-planned for a future version.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for design decisions, technology choices, and the reasoning behind each one.
 
-### CLI
+## License
 
-```bash
-# Analyze working tree changes vs HEAD (default)
-skannr blast-radius --root .
-
-# Analyze a specific diff file, 3 hops deep
-skannr blast-radius --root . --diff changes.patch --hops 3
-
-# JSON output for CI pipelines
-skannr blast-radius --root . --json
-```
-
-Sample terminal output:
-
-```
-  Blast Radius Analysis (2-hop traversal)
-  ──────────────────────────────────────────────────
-
-  Risk Score: 5.8/10
-  Risk 5.8/10 (moderate): 1 file(s) changed, 4 downstream affected, 3 untested.
-
-  Changed files:
-    src/auth/session.ts
-
-  Changed symbols:
-    function validateToken (src/auth/session.ts)
-
-  Hop 1 (2 files):
-    src/middleware/auth-guard.ts  centrality=0.85 [NO TEST]
-    src/api/login.ts              centrality=0.60
-
-  Hop 2 (2 files):
-    src/routes/index.ts           centrality=0.45 [NO TEST]
-    src/api/admin.ts              centrality=0.30 [NO TEST]
-
-  Formula inputs:
-    affected_count (normalized): 0.080
-    avg_centrality:              0.550
-    untested_ratio:              0.750
-    hop_spread (normalized):     1.000
-```
-
-### MCP
-
-The `blast_radius` tool is exposed via the same MCP server (`skannr --mcp`).
-
-Input schema:
-
-```json
-{
-  "root": "/path/to/repo",
-  "diff": "<optional unified diff content>",
-  "hops": 2
-}
-```
-
-If `diff` is omitted, the tool runs `git diff HEAD` in the given root.
-The output is the same JSON structure as `skannr blast-radius --json`.
-
-### Risk Score Formula
-
-```
-risk = 2.5 × normalizedAffectedCount
-     + 2.5 × avgCentrality
-     + 3.5 × untestedRatio
-     + 1.5 × normalizedMaxHopSpread
-```
-
-| Input | Range | Meaning |
-|-------|-------|---------|
-| normalizedAffectedCount | 0–1 | Affected files / total project files |
-| avgCentrality | 0–1 | Mean in-degree centrality of affected files |
-| untestedRatio | 0–1 | Fraction of affected files with no test file |
-| normalizedMaxHopSpread | 0–1 | Deepest hop reached / max configured hops |
+MIT
